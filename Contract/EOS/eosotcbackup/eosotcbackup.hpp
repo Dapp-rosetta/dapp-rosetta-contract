@@ -1,4 +1,4 @@
-﻿#include <eosiolib/currency.hpp>
+﻿#include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <math.h>
 #include <string>
@@ -9,7 +9,15 @@
 using namespace eosio;
 using namespace std;
 
-typedef double real_type;
+struct st_transfer {
+    account_name from;
+    account_name to;
+    asset        quantity;
+    string       memo;
+
+    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
+};
+
 
 class eosotcbackup : public contract
 {
@@ -54,8 +62,8 @@ void eosotcbackup::apply(account_name code, action_name action) {
     auto &thiscontract = *this;
 
     if (action == N(transfer)) {
-        auto transfer_data = unpack_action_data<currency::transfer>();
-        onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, code), transfer_data.memo);
+        auto transfer_data = unpack_action_data<st_transfer>();
+        onTransfer(transfer_data.from, transfer_data.to, extended_asset( transfer_data.quantity, code), transfer_data.memo);
         return;
     }
 
