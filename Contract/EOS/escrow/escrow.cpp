@@ -4,7 +4,6 @@
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <cmath>
 #include <string>
 
 #define EOS S(4, EOS)
@@ -23,16 +22,6 @@ struct st_transfer {
     EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
 };
 
-uint64_t string_to_price(string s) {
-    uint64_t z = 0;
-    for (int i=0;i<s.size();++i) {
-        if ('0' <= s[i] && s[i] <= '9') {
-            z *= 10; 
-            z += s[i] - '0';
-        }
-    }
-    return z;
-} // string_to_price()
 class escrow : public contract
 {
 public:
@@ -45,16 +34,16 @@ public:
         if (to != _self) return;
     
         require_auth(from);
-        eosio_assert(quantity.is_valid(), "invalid token transfer");
-        eosio_assert(quantity.amount > 0, "must transfer a positive amount");
+        eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
+        eosio_assert(quantity.quantity.amount > 0, "must transfer a positive amount");
     
-        asset a = asset(quantity.symbol, quantity.amount / 2);
-        asset b = asset(quantity.symbol, quantity.amount - quantity.amount / 2);
+        auto a = asset(quantity.quantity.symbol, quantity.quantity.amount / 2);
+        auto b = asset(quantity.quantity.symbol, quantity.quantity.amount - quantity.quantity.amount / 2);
 
         if (a.amount > 0) {
             action(
                 permission_level{_self, N(active)},
-                quantity.countract, N(transfer),
+                quantity.contract, N(transfer),
                 make_tuple(_self, N(minakokojima), a,
                 std::string(""))
             ).send();
@@ -62,7 +51,7 @@ public:
         if (b.amount > 0) {
             action(
                 permission_level{_self, N(active)},
-                quantity.countract, N(transfer),
+                quantity.contract, N(transfer),
                 make_tuple(_self, N(rukamoemoe51), b,
                 std::string(""))
             ).send();
@@ -75,7 +64,7 @@ public:
 
         if (action == N(transfer)) {
             auto transfer_data = unpack_action_data<st_transfer>();
-            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, code), transfer_data.memo);
+            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name { .value= code } ), transfer_data.memo);
             return;
         }
     }                    
