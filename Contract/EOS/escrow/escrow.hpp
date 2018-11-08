@@ -1,6 +1,7 @@
-﻿#include <eosiolib/currency.hpp>
+﻿
+#include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <math.h>
+#include <cmath>
 #include <string>
 
 #define EOS S(4, EOS)

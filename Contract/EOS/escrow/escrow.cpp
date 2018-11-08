@@ -1,5 +1,5 @@
 ﻿/**
- *  @dev minakokojima
+ *  @dev minakokojima, yukiexe
  */
 
 #include "escrow.hpp"
