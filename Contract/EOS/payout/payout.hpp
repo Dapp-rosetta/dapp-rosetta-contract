@@ -1,16 +1,14 @@
 ﻿/**
  *  @dev minakokojima, yukiexe
+ *  @env cdt v1.2.x
  */
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <string>
+#include <eosiolib/singleton.hpp>
 
 #include "config.hpp"
 #include "utils.hpp"
-
-#define EOS S(4, EOS)
-#define TOKEN_CONTRACT N(eosio.token)
 
 using namespace eosio;
 using namespace std;
@@ -27,9 +25,9 @@ struct st_transfer {
 class payout : public contract
 {
 public:
-    escrow(account_name self) : 
-        contract(self) {
-    }
+    payout(account_name self) : 
+        contract(self),
+        _global(self,self) {}
     
     void onTransfer(account_name from, account_name to, extended_asset quantity, std::string memo);   
 
@@ -68,15 +66,13 @@ public:
         _voters.set(v, _self);
     }   
 
-    // @abi table voters
-    struct voter_info {
+    struct [[eosio::table]] voter_info {
         account_name to = 0;
         uint64_t staked = 0;
         uint64_t payout = 0;
     };        
 
-    // @abi table global
-    struct st_global {       
+    struct [[eosio::table]] st_global {       
         uint64_t defer_id = 0;
         uint64_t total_staked;
         uint128_t earnings_per_share;
@@ -100,7 +96,7 @@ public:
 extern "C" {
     [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
     {
-        escrow p(receiver);
+        payout p(receiver);
         p.apply(code, action);
         eosio_exit(0);
     }
