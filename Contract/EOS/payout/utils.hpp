@@ -12,10 +12,6 @@ struct account {
 
 typedef eosio::multi_index<N(accounts), account> accounts;
 struct rec_reveal {
-    uint8_t dragon ;
-    uint8_t tiger ;
-    checksum256 server_hash;
-    checksum256 client_seed;
 };
 
 const vector<string> split(const string& s, const char& t) {

@@ -42,7 +42,7 @@ public:
         _voters.set(v, _self);
     }
 
-    void unstake(account_name from, uint64_t delta) {
+    [[eosio::action]] void unstake(account_name from, uint64_t delta) {
         require_auth(from);
         singleton_voters _voters(_self, from);
         auto v = _voters.get_or_create(_self, voter_info{});
@@ -64,21 +64,37 @@ public:
 
         v.staked -= delta;
         _voters.set(v, _self);
-    }   
+    }
 
+    [[eosio::action]] void claim(const account_name &account) {
+        require_auth(account);
+        singleton_voters _voters(_self, account);
+        auto v = _voters.get_or_create(_self, voter_info{});
+        eosio_assert(v.payout > 0, "no profit by now");
+
+        action(
+            permission_level{_self, N(active)},
+            N(dacincubator), N(transfer),
+            make_tuple(_self, account, asset(v.payout, TOKEN_SYMBOL),
+                       std::string("transfer token by make_profit")))
+            .send();
+
+        v.payout = 0;
+        _voters.set(v, _self);
+    }
+    
     struct [[eosio::table]] voter_info {
         account_name to = 0;
         uint64_t staked = 0;
         uint64_t payout = 0;
-    };        
+    };
 
     struct [[eosio::table]] st_global {       
         uint64_t defer_id = 0;
         uint64_t total_staked;
         uint128_t earnings_per_share;
-    };   
-    
-    typedef singleton<N(voters),  voter_info>  singleton_voters;    
+    };
+    typedef singleton<N(voters), voter_info> singleton_voters;    
     typedef singleton<N(global), st_global> singleton_global;
     singleton_global _global;     
 
