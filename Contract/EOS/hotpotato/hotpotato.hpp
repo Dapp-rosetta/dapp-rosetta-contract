@@ -50,7 +50,6 @@ class hotpotato : public contract {
     struct [[eosio::table]] land {
         uint64_t     id;
         account_name owner = 0;
-        uint64_t primary_key()const { return id; }        
         uint64_t price;           
         uint64_t parent;
         void tax() {
@@ -58,6 +57,8 @@ class hotpotato : public contract {
         uint64_t next_price() const {
             return price * 1.35;
         }
+
+        auto primary_key()const { return id; }
     };    
     
     struct [[eosio::table]] player {
@@ -74,20 +75,20 @@ class hotpotato : public contract {
         }
     };
         
-    struct [[eosio::table]] global {       
+    struct [[eosio::table]] st_global {       
         uint64_t team;
         uint64_t pool;
         account_name last;
         time st, ed;
     };
 
-    typedef eosio::multi_index<N(land), land> land_index;
-    land_index _land;   
+    typedef eosio::multi_index<N(land), land> land_t;
+    land_t _land;   
 
-    typedef eosio::multi_index<N(player), player> player_index;
-    player_index _player;  
+    typedef eosio::multi_index<N(player), player> player_t;
+    player_t _player;  
 
-    typedef singleton<N(global), global> singleton_global;
+    typedef singleton<N(global), st_global> singleton_global;
     singleton_global _global;       
     
 };

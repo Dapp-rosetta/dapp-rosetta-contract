@@ -6,7 +6,6 @@
 #include "hotpotato.hpp"
 
 void hotpotato::init() {
-    // use bancor sell token
     require_auth(_self);    
 
     while (_land.begin() != _land.end()) {
@@ -43,7 +42,7 @@ void hotpotato::buy_land(account_name from, extended_asset in, const vector<stri
     eosio_assert(in.symbol == EOS_SYMBOL, "only EOS token is allowed");
    
     eosio_assert(params.size() >= 2, "No ID found.");
-    auto id = string_to_price(params[1]);
+    auto id = string_to_price(params[1].c_str());
 
     auto itr = _land.find(id);
     eosio_assert(itr != _land.end(), "no land exist");
