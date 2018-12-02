@@ -4,7 +4,6 @@
  */
 #pragma once
 #include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/transaction.hpp>
 
@@ -30,11 +29,38 @@ public:
 
     void onTransfer(name from, name to, extended_asset in, string memo);
 
-    /*
+    [[eosio::action]] void stake(name from, asset delta);
+    [[eosio::action]] void unstake(name from, asset delta);
+    [[eosio::action]] void claim(name from);
+
+    struct [[eosio::table]] voter_info {
+        name     to;
+        asset    staked;
+        int64_t  payout;        
+    };
+
+    struct refund_request {
+        name     owner;
+        uint32_t request_time;
+        asset    amount;
+
+        uint64_t  primary_key()const { return owner.value; }
+    };
+
+    struct [[eosio::table]] global_info {
+        uint64_t defer_id;
+        asset    total_staked;
+        int128_t earnings_per_share;
+    };
+
+    typedef singleton<"voters"_n, voter_info> singleton_voters;
+    typedef singleton<"global"_n, global_info> singleton_global;
+    singleton_global _global;
+
     uint64_t get_next_defer_id() {
-    auto g = _global.get();    
-    g.defer_id += 1;
-    _global.set(g,_self);
+        auto g = _global.get();    
+        g.defer_id += 1;
+        _global.set(g,_self);
         return g.defer_id;
     }
 
@@ -43,27 +69,7 @@ public:
         transaction trx;
         trx.actions.emplace_back(std::forward<Args>(args)...);
         trx.send(get_next_defer_id(), _self, false);
-    }*/
-
-    [[eosio::action]] void stake(name from, uint64_t delta);
-    [[eosio::action]] void unstake(name from, uint64_t delta);
-    [[eosio::action]] void claim(name from);
-
-    struct [[eosio::table]] voter_info {
-        name     to;
-        uint64_t staked;
-        int64_t payout;
-    };
-
-    struct [[eosio::table]] st_global {
-        uint64_t defer_id;
-        uint64_t total_staked;
-        int128_t earnings_per_share;
-    };
-
-    typedef singleton<"voters"_n, voter_info> singleton_voters;
-    typedef singleton<"global"_n, st_global> singleton_global;
-    singleton_global _global;
+    }    
 
     void apply(uint64_t code, uint64_t action) {
         auto &thiscontract = *this;

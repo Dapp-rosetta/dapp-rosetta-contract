@@ -1,39 +1,35 @@
 ﻿#include "payout.hpp"
-/*
 
-void payout::stake(account_name from, uint64_t delta)
-{
+void payout::stake(name from, asset delta) {
     require_auth(from);
-    eosio_assert(delta > 0, "must stake a positive amount");
-    singleton_voters _voters(_self, from);
+    eosio_assert(delta.amount > 0, "must stake a positive amount");
+    singleton_voters _voters(_self, from.value);
     auto v = _voters.get_or_create(_self, voter_info{});
     auto g = _global.get();
     v.staked += delta;
-    v.payout += g.earnings_per_share * delta / MAGNITUDE;
+    v.payout += g.earnings_per_share * delta.amount / MAGNITUDE;
     _voters.set(v, _self);
+    g.total_staked += delta;
+    _global.set(g, _self);    
 }
 
-void payout::unstake(account_name from, uint64_t delta)
-{
+void payout::unstake(name from, asset delta) {
     require_auth(from);
-    singleton_voters _voters(_self, from);
+    singleton_voters _voters(_self, from.value);
     auto v = _voters.get_or_create(_self, voter_info{});
     auto g = _global.get();
-    eosio_assert(delta <= v.staked, "don't have enough CMU for unstake");
+    eosio_assert(delta <= v.staked, "don't have enough token for unstake");
 
     action(
-        permission_level{_self, N(active)},
-        N(dacincubator), N(transfer),
-        make_tuple(_self, from, asset(delta, TOKEN_SYMBOL),
-                   std::string("transfer token by unstake")))
-        .send();
+        permission_level{_self, "active"_n},
+        TOKEN_CONTRACT, "transfer"_n,
+        make_tuple(_self, from, delta,
+                   std::string("transfer token by unstake"))
+    ).send();
 
-    if (g.earnings_per_share * delta / MAGNITUDE <= v.payout)
-    {
-        v.payout -= g.earnings_per_share * delta / MAGNITUDE;
-    }
-    else
-    {
+    if (g.earnings_per_share * delta.amount / MAGNITUDE <= v.payout) {
+        v.payout -= g.earnings_per_share * delta.amount / MAGNITUDE;
+    } else {
         v.payout = 0;
     }
 
@@ -41,40 +37,31 @@ void payout::unstake(account_name from, uint64_t delta)
     _voters.set(v, _self);
 }
 
-void payout::claim(const account_name &account)
-{
-    require_auth(account);
-    singleton_voters _voters(_self, account);
+void payout::claim(name from) {
+    require_auth(from);
+    singleton_voters _voters(_self, from.value);
     auto v = _voters.get_or_create(_self, voter_info{});
     auto g = _global.get();
 
-    // TODO(minakokojima): unvote(v);
-    uint64_t delta = 0;
-    if (g.earnings_per_share * v.staked / MAGNITUDE <= v.payout)
-        delta = 0;
-    else
-        delta = g.earnings_per_share * v.staked / MAGNITUDE - v.payout;
 
-    v.payout = g.earnings_per_share * v.staked / MAGNITUDE;
+    // TODO(minakokojima): unvote(v);
+    auto delta = asset(0, EOS_SYMBOL);
+    auto raw_payout = g.earnings_per_share * v.staked.amount / MAGNITUDE;
+    if (raw_payout > v.payout) delta.amount = raw_payout - v.payout;
+
+    v.payout = raw_payout;
     _voters.set(v, _self);
 
-    //singleton_players _players(_self, from);
-    //auto p = _players.get_or_create(_self, player_info{});
-
-    if (delta > 0)
-    {
+    if (delta.amount > 0) {
         send_defer_action(
-            permission_level{_self, N(active)},
-            N(eosio.token), N(transfer),
-            make_tuple(_self, account,
-                       asset(delta, EOS_SYMBOL),
-                       string("claim dividend.")));
+            permission_level{_self, "active"_n},
+            EOS_CONTRACT, "transfer"_n,
+            make_tuple(_self, from, delta,
+                string("claim dividend."))
+        );
     }
-
-    // p.pool_profit = 0;
-    // _players.set(p, _self);
 }
-*/
+
 
 void payout::onTransfer(name from, name to, extended_asset quantity, string memo) {        
 
@@ -91,9 +78,7 @@ void payout::onTransfer(name from, name to, extended_asset quantity, string memo
         eosio_assert(quantity.contract == TOKEN_CONTRACT, "must use true CTN to stake");
         eosio_assert(quantity.quantity.symbol == TOKEN_SYMBOL, "must use CTN to stake");
         stake(from, quantity.quantity.amount);
-        auto g = _global.get();
-        g.total_staked += quantity.quantity.amount;
-        _global.set(g, _self);     
+ 
         return;
     }    
 

@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 06:14:18 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 07:45:54 2018",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -13,7 +13,7 @@
             ]
         },
         {
-            "name": "st_global",
+            "name": "global_info",
             "base": "",
             "fields": [
                 {
@@ -22,7 +22,7 @@
                 },
                 {
                     "name": "total_staked",
-                    "type": "uint64"
+                    "type": "asset"
                 },
                 {
                     "name": "earnings_per_share",
@@ -40,7 +40,7 @@
                 },
                 {
                     "name": "delta",
-                    "type": "uint64"
+                    "type": "asset"
                 }
             ]
         },
@@ -54,7 +54,7 @@
                 },
                 {
                     "name": "delta",
-                    "type": "uint64"
+                    "type": "asset"
                 }
             ]
         },
@@ -68,7 +68,7 @@
                 },
                 {
                     "name": "staked",
-                    "type": "uint64"
+                    "type": "asset"
                 },
                 {
                     "name": "payout",
@@ -97,8 +97,8 @@
     ],
     "tables": [
         {
-            "name": "st_global",
-            "type": "st_global",
+            "name": "global_info",
+            "type": "global_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
