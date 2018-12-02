@@ -1,13 +1,10 @@
 ﻿/**
- *  @dev minakokojima, yukiexe
+ *  @dev minakokojima, rukamoemoe51
  */
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <string>
-
-#define EOS S(4, EOS)
-#define TOKEN_CONTRACT N(eosio.token)
 
 using namespace eosio;
 using namespace std;
@@ -25,42 +22,40 @@ CONTRACT escrow : public eosio::contract {
 public:
     using contract::contract;
 
-    void onTransfer(eosio::name from, eosio::name to, extended_asset quantity, std::string memo) {        
+    void onTransfer(eosio::name from, eosio::name to, extended_asset in, std::string memo) {        
     
         if (to != _self) return;
-    
         require_auth(from);
-
-        eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
-        eosio_assert(quantity.quantity.amount > 0, "must transfer a positive amount");
-
-        /*    
-        auto a = asset(quantity.quantity.symbol, quantity.quantity.amount / 2);
-        auto b = asset(quantity.quantity.symbol, quantity.quantity.amount - quantity.quantity.amount / 2);
+        eosio_assert(in.quantity.is_valid(), "invalid token transfer");
+        eosio_assert(in.quantity.amount > 0, "must transfer a positive amount");
+            
+        auto a = asset(in.quantity.amount / 2, in.quantity.symbol);
+        auto b = asset(in.quantity.amount - in.quantity.amount / 2, in.quantity.symbol);
 
         if (a.amount > 0) {
             action(
                 permission_level{_self, "active"_n},
-                quantity.contract, N(transfer),
-                make_tuple(_self, N(minakokojima), a,
-                std::string(""))
+                in.contract, name("transfer"),
+                make_tuple(_self, name("minakokojima"), a,
+                string(""))
             ).send();
         }
-        if (b.amount > 0) {
+
+        if (b.amount > 0) {            
             action(
-                permission_level{_self, "active"_n},
-                quantity.contract, "transfer"_n),
-                make_tuple(_self, "rukamoemoe51"_n), b,
-                std::string(""))
+                permission_level{_self, name("active")},
+                in.contract, name("transfer"),
+                make_tuple(_self, name("rukamoemoe51"), b,
+                string(""))
             ).send();
-        }*/
+        }
     } // onTransfer()
 
     void apply(uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
-        if (action == eosio::name("transfer").value) {
+        if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();
-            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, eosio::name(code)), transfer_data.memo);
+            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name(code)), transfer_data.memo);
             return;
         }
     }
