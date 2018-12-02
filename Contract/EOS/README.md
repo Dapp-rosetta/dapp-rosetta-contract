@@ -10,3 +10,7 @@ Make sure you are using the correct version of cdt.
 - https://github.com/EOSIO/eosio.cdt#usage
 - https://medium.com/eosio/eosio-version-1-4-3-and-eosio-cdt-version-1-4-0-release-6542a82bcbe8
 - https://medium.com/eosio/eosio-version-1-3-0-5c15dcfd79a2
+
+# Document
+- https://developers.eos.io/eosio-cpp/docs/introduction-to-smart-contracts
+- https://developers.eos.io/eosio-home/docs/your-first-contract

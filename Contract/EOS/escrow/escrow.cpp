@@ -10,12 +10,10 @@ using namespace eosio;
 using namespace std;
 
 struct st_transfer {
-    eosio::name from;
-    eosio::name to;
-    asset       quantity;
-    string      memo;
-
-    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
+    name   from;
+    name   to;
+    asset  quantity;
+    string memo;
 };
 
 CONTRACT escrow : public eosio::contract {

@@ -2,8 +2,8 @@
  *  @dev minakokojima, yukiexe
  */
 
-#include "eosotcbackup.hpp"
 
+#include "eosotcbackup.hpp"
 
 void eosotcbackup::init() {
     require_auth(_self);    
@@ -11,20 +11,17 @@ void eosotcbackup::init() {
 
 void eosotcbackup::clean() {
     require_auth(_self);
-    /*
-    while(offers.begin() != offers.end()) {        
-	    offers.erase(offers.begin());
-    }
-    */
 }
 
 void eosotcbackup::test() {
     require_auth(_self);
 }
 
-void eosotcbackup::ask(const account_name &owner, const extended_asset &bid, const extended_asset &ask) {
-    eosio_assert(bid.contract != N("eosotcbackup"), "fake" );
-    eosio_assert(ask.contract != N("eosotcbackup"), "fake" );
+
+void eosotcbackup::ask(name owner, extended_asset bid, extended_asset ask) {
+//    eosio_assert(bid.contract != N("eosotcbackup"), "fake" );
+//    eosio_assert(ask.contract != N("eosotcbackup"), "fake" );
+    /*
     order_index orders(_self, ask.contract);    
     
     auto id = orders.available_primary_key();
@@ -37,9 +34,9 @@ void eosotcbackup::ask(const account_name &owner, const extended_asset &bid, con
         action(permission_level{_self, N(active)},
             _self, N(receipt), o
         ).send();
-    });
+    });*/
 }
-
+/*
 void eosotcbackup::take(const account_name &owner, const uint64_t &order_id, const extended_asset &bid, const extended_asset &ask) {
     
     const char* str_fake_currency = "fake currency." ;
@@ -145,10 +142,12 @@ void eosotcbackup::retrieve(account_name owner, uint64_t order_id, extended_asse
     orders.erase(itr);
 }
     
+*/
+
 // memo [ask,0.5000 HPY,happyeosslot]
 // memo [take,0.5000 HPY,happyeosslot,id]
-void eosotcbackup::onTransfer(account_name from, account_name to, extended_asset bid, std::string memo) {        
-    
+void eosotcbackup::onTransfer(name from, name to, extended_asset bid, string memo) {        
+    /*
     if (to != _self) return;
     
     require_auth(from);
@@ -201,5 +200,5 @@ void eosotcbackup::onTransfer(account_name from, account_name to, extended_asset
         memo.erase(0, p+1);
         auto id = string_to_price(memo);        
         take(from, id, bid, _ask);
-    }
+    }*/
 }
