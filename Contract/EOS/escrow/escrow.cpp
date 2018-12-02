@@ -61,7 +61,6 @@ public:
     }
 };
 
-
 extern "C" {
     [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         escrow p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
