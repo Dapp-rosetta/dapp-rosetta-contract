@@ -12,35 +12,37 @@
 using namespace eosio;
 using namespace std;
 
+
 struct st_transfer {
-    eosio::name from;
-    eosio::name to;
-    asset       quantity;
-    string      memo;
+    account_name from;
+    account_name to;
+    asset        quantity;
+    string       memo;
 
     EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
 };
 
-CONTRACT escrow : public eosio::contract {
+class escrow : public contract
+{
 public:
-    using contract::contract;
-
-    void onTransfer(eosio::name from, eosio::name to, extended_asset quantity, std::string memo) {        
+    escrow(account_name self) : 
+        contract(self) {
+    }
+    
+    void onTransfer(account_name from, account_name to, extended_asset quantity, std::string memo) {        
     
         if (to != _self) return;
     
         require_auth(from);
-
         eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
         eosio_assert(quantity.quantity.amount > 0, "must transfer a positive amount");
-
-        /*    
+    
         auto a = asset(quantity.quantity.symbol, quantity.quantity.amount / 2);
         auto b = asset(quantity.quantity.symbol, quantity.quantity.amount - quantity.quantity.amount / 2);
 
         if (a.amount > 0) {
             action(
-                permission_level{_self, "active"_n},
+                permission_level{_self, N(active)},
                 quantity.contract, N(transfer),
                 make_tuple(_self, N(minakokojima), a,
                 std::string(""))
@@ -48,28 +50,30 @@ public:
         }
         if (b.amount > 0) {
             action(
-                permission_level{_self, "active"_n},
-                quantity.contract, "transfer"_n),
-                make_tuple(_self, "rukamoemoe51"_n), b,
+                permission_level{_self, N(active)},
+                quantity.contract, N(transfer),
+                make_tuple(_self, N(rukamoemoe51), b,
                 std::string(""))
             ).send();
-        }*/
+        }
     } // onTransfer()
 
-    void apply(uint64_t code, uint64_t action) {
+
+    void apply(account_name code, action_name action) {
         auto &thiscontract = *this;
-        if (action == eosio::name("transfer").value) {
+
+        if (action == N(transfer)) {
             auto transfer_data = unpack_action_data<st_transfer>();
-            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, eosio::name(code)), transfer_data.memo);
+            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name { .value= code } ), transfer_data.memo);
             return;
         }
-    }
+    }                    
 };
 
-
 extern "C" {
-    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
-        escrow p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
+    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
+    {
+        escrow p(receiver);
         p.apply(code, action);
         eosio_exit(0);
     }
