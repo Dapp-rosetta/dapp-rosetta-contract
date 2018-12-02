@@ -16,17 +16,19 @@ struct st_transfer {
     string memo;
 };
 
-CONTRACT escrow : public eosio::contract {
+CONTRACT escrow : public contract {
 public:
     using contract::contract;
 
-    void onTransfer(eosio::name from, eosio::name to, extended_asset in, std::string memo) {        
+    ACTION transfer(name from, name to, asset quantity, string memo);
+
+    void onTransfer(name from, name to, extended_asset in, string memo) {        
     
         if (to != _self) return;
         require_auth(from);
         eosio_assert(in.quantity.is_valid(), "invalid token transfer");
         eosio_assert(in.quantity.amount > 0, "must transfer a positive amount");
-            
+
         auto a = asset(in.quantity.amount / 2, in.quantity.symbol);
         auto b = asset(in.quantity.amount - in.quantity.amount / 2, in.quantity.symbol);
 

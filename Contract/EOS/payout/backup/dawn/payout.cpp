@@ -1,5 +1,4 @@
 ﻿#include "payout.hpp"
-/*
 
 void payout::stake(account_name from, uint64_t delta)
 {
@@ -74,11 +73,9 @@ void payout::claim(const account_name &account)
     // p.pool_profit = 0;
     // _players.set(p, _self);
 }
-*/
 
-void payout::onTransfer(name from, name to, extended_asset quantity, string memo) {        
+void payout::onTransfer(account_name from, account_name to, extended_asset quantity, std::string memo) {        
 
-    /*
     if (to != _self) return;
     require_auth(from);
     eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
@@ -103,5 +100,4 @@ void payout::onTransfer(name from, name to, extended_asset quantity, string memo
         // make_profit(quantity.quantity.amount);
         return;
     }
-    */
 }

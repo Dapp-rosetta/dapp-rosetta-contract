@@ -6,20 +6,14 @@
 #include <eosiolib/asset.hpp>
 #include <string>
 
-#define EOS S(4, EOS)
-#define TOKEN_CONTRACT N(eosio.token)
-
 using namespace eosio;
 using namespace std;
-
 
 struct st_transfer {
     account_name from;
     account_name to;
     asset        quantity;
     string       memo;
-
-    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
 };
 
 class escrow : public contract
@@ -34,11 +28,11 @@ public:
         if (to != _self) return;
     
         require_auth(from);
-        eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
-        eosio_assert(quantity.quantity.amount > 0, "must transfer a positive amount");
+        eosio_assert(quantity.is_valid(), "invalid token transfer");
+        eosio_assert(quantity.amount > 0, "must transfer a positive amount");
     
-        auto a = asset(quantity.quantity.symbol, quantity.quantity.amount / 2);
-        auto b = asset(quantity.quantity.symbol, quantity.quantity.amount - quantity.quantity.amount / 2);
+        auto a = asset(quantity.symbol, quantity.amount / 2);
+        auto b = asset(quantity.symbol, quantity.amount - quantity.amount / 2);
 
         if (a.amount > 0) {
             action(
@@ -71,8 +65,7 @@ public:
 };
 
 extern "C" {
-    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
-    {
+    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         escrow p(receiver);
         p.apply(code, action);
         eosio_exit(0);

@@ -1,13 +1,13 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 06:14:18 2018",
-    "version": "eosio::abi/1.1",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Wed Nov 28 17:11:16 2018",
+    "version": "eosio::abi/1.0",
     "structs": [
         {
             "name": "claim",
             "base": "",
             "fields": [
                 {
-                    "name": "from",
+                    "name": "account",
                     "type": "name"
                 }
             ]
@@ -26,7 +26,7 @@
                 },
                 {
                     "name": "earnings_per_share",
-                    "type": "int128"
+                    "type": "uint128"
                 }
             ]
         },
@@ -72,7 +72,7 @@
                 },
                 {
                     "name": "payout",
-                    "type": "int64"
+                    "type": "uint64"
                 }
             ]
         }
@@ -97,14 +97,14 @@
     ],
     "tables": [
         {
-            "name": "st_global",
+            "name": "global",
             "type": "st_global",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "voter_info",
+            "name": "voters",
             "type": "voter_info",
             "index_type": "i64",
             "key_names": [],
@@ -112,6 +112,5 @@
         }
     ],
     "ricardian_clauses": [],
-    "variants": [],
     "abi_extensions": []
 }
