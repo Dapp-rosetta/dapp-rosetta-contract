@@ -1,7 +1,25 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 07:45:54 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 21:04:24 2018",
     "version": "eosio::abi/1.1",
     "structs": [
+        {
+            "name": "apply",
+            "base": "",
+            "fields": [
+                {
+                    "name": "receiver",
+                    "type": "uint64"
+                },
+                {
+                    "name": "code",
+                    "type": "uint64"
+                },
+                {
+                    "name": "action",
+                    "type": "uint64"
+                }
+            ]
+        },
         {
             "name": "claim",
             "base": "",
@@ -31,7 +49,35 @@
             ]
         },
         {
-            "name": "stake",
+            "name": "refund",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "refund_request",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "request_time",
+                    "type": "uint32"
+                },
+                {
+                    "name": "amount",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
             "base": "",
             "fields": [
                 {
@@ -39,8 +85,16 @@
                     "type": "name"
                 },
                 {
-                    "name": "delta",
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
                     "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
                 }
             ]
         },
@@ -80,13 +134,23 @@
     "types": [],
     "actions": [
         {
+            "name": "apply",
+            "type": "apply",
+            "ricardian_contract": ""
+        },
+        {
             "name": "claim",
             "type": "claim",
             "ricardian_contract": ""
         },
         {
-            "name": "stake",
-            "type": "stake",
+            "name": "refund",
+            "type": "refund",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
             "ricardian_contract": ""
         },
         {
@@ -99,6 +163,13 @@
         {
             "name": "global_info",
             "type": "global_info",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "refunds",
+            "type": "refund_request",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

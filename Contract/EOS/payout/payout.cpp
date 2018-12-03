@@ -1,5 +1,8 @@
 ﻿#include "payout.hpp"
 
+void payout::make_profit(uint64_t delta) {
+}
+
 void payout::stake(name from, asset delta) {
     require_auth(from);
     eosio_assert(delta.amount > 0, "must stake a positive amount");
@@ -52,7 +55,7 @@ void payout::claim(name from) {
     v.payout = raw_payout;
     _voters.set(v, _self);
 
-    if (delta.amount > 0 && delta.amount <= _balance) {
+    if (delta.amount > 0) {
         send_defer_action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,
@@ -63,30 +66,27 @@ void payout::claim(name from) {
 }
 
 
-void payout::onTransfer(name from, name to, extended_asset quantity, string memo) {        
+void payout::onTransfer(name from, name to, extended_asset in, string memo) {        
 
-    /*
     if (to != _self) return;
     require_auth(from);
-    eosio_assert(quantity.quantity.is_valid(), "invalid token transfer");
-    eosio_assert(quantity.quantity.amount > 0, "must transfer a positive amount");
+    eosio_assert(in.quantity.is_valid(), "invalid token transfer");
+    eosio_assert(in.quantity.amount > 0, "must transfer a positive amount");
 
     auto params = split(memo, ' ');
     eosio_assert(params.size() >= 1, "error memo");    
     
     if (params[0] == "stake") {        
-        eosio_assert(quantity.contract == TOKEN_CONTRACT, "must use true CTN to stake");
-        eosio_assert(quantity.quantity.symbol == TOKEN_SYMBOL, "must use CTN to stake");
-        stake(from, quantity.quantity.amount);
- 
+        eosio_assert(in.contract == TOKEN_CONTRACT, "must use true target TOKEN to stake");
+        eosio_assert(in.quantity.symbol == TOKEN_SYMBOL, "must use target TOKEN to stake");
+        stake(from, in.quantity);
         return;
     }    
-
+    
     if (params[0] == "make_profit") {
-        eosio_assert(quantity.contract == N(eosio.token), "must use true EOS to make profit");
-        eosio_assert(quantity.quantity.symbol == EOS_SYMBOL, "must use EOS to make profit");
-        // make_profit(quantity.quantity.amount);
+        eosio_assert(in.contract == EOS_CONTRACT, "must use true EOS to make profit");
+        eosio_assert(in.quantity.symbol == EOS_SYMBOL, "must use EOS to make profit");
+        make_profit(in.quantity.amount);
         return;
     }
-    */
 }
