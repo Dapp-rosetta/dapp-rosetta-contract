@@ -18,7 +18,9 @@ struct st_transfer {
 
 CONTRACT escrow : public contract {
 public:
-    using contract::contract;
+    escrow(name receiver, name code, datastream<const char*> ds): 
+        contract(receiver, code, ds) {
+    }
 
     ACTION transfer(name from, name to, asset quantity, string memo);
 
@@ -28,7 +30,6 @@ public:
         require_auth(from);
         eosio_assert(in.quantity.is_valid(), "invalid token transfer");
         eosio_assert(in.quantity.amount > 0, "must transfer a positive amount");
-
         eosio_assert(in.contract == _code, "code is different");
 
         auto a = asset(in.quantity.amount / 2, in.quantity.symbol);
@@ -53,7 +54,7 @@ public:
         }
     } // onTransfer()
 
-    void apply(uint64_t code, uint64_t action) {
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
         if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();
@@ -66,7 +67,7 @@ public:
 extern "C" {
     [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         escrow p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
-        p.apply(code, action);
+        p.apply(receiver, code, action);
         eosio_exit(0);
     }
 }
