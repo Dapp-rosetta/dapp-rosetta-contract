@@ -1,6 +1,13 @@
 ﻿#include "payout.hpp"
 
+void payout::init() {
+    require_auth(_self);
+}
+
 void payout::make_profit(uint64_t delta) {
+    auto g = _global.get();
+    g.earnings_per_share += MAGNITUDE * delta / g.total_staked.amount;
+    _global.set(g, _self);
 }
 
 void payout::stake(name from, asset delta) {
@@ -46,7 +53,6 @@ void payout::claim(name from) {
     auto v = _voters.get_or_create(_self, voter_info{});
     auto g = _global.get();
 
-
     // TODO(minakokojima): unvote(v);
     auto delta = asset(0, EOS_SYMBOL);
     auto raw_payout = g.earnings_per_share * v.staked.amount / MAGNITUDE;
@@ -56,6 +62,9 @@ void payout::claim(name from) {
     _voters.set(v, _self);
 
     if (delta.amount > 0) {
+
+        
+
         send_defer_action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,

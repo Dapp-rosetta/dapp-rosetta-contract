@@ -29,13 +29,13 @@ public:
         _global(receiver, receiver.value) {
     }
 
+    ACTION init();
+    ACTION unstake(name from, asset delta);
+    ACTION claim(name from);    
     ACTION transfer(name from, name to, asset quantity, string memo);
     void onTransfer(name from, name to, extended_asset in, string memo);
-
     void stake(name from, asset delta);
     void make_profit(uint64_t delta);
-    ACTION unstake(name from, asset delta);
-    ACTION claim(name from);
 
     struct [[eosio::table]] voter_info {
         name     to;
