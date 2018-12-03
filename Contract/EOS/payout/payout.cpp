@@ -71,7 +71,6 @@ void payout::claim(name from) {
     }
 }
 
-
 void payout::onTransfer(name from, name to, extended_asset in, string memo) {        
 
     if (to != _self) return;
