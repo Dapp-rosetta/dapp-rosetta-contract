@@ -52,13 +52,30 @@ void payout::claim(name from) {
     v.payout = raw_payout;
     _voters.set(v, _self);
 
-    if (delta.amount > 0 && delta.amount <= _balance) {
+    if (delta.amount > 0 ) {
         send_defer_action(
-            permission_level{_self, "active"_n},
+            permission_level{ _self, "active"_n },
             EOS_CONTRACT, "transfer"_n,
             make_tuple(_self, from, delta,
                 string("claim dividend."))
         );
+    
+
+        eosio::transaction out; 
+        out.actions.emplace_back(
+            permission_level{ from, "active"_n }, 
+            _self, "refund"_n, 
+            from );
+        out.delay_sec = REFUND_DELAY;
+        cancel_deferred( from );
+        out.send( from, from, true );        
+
+
+        refunds_table refunds_tbl( _self, from.value);
+        auto req = refunds_tbl.get_or_create(_self, refund_request{});
+        req.request_time = now();
+        req.amount += delta;
+        refunds_tbl.set(req, _self);
     }
 }
 
