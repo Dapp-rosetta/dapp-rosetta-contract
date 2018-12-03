@@ -29,11 +29,13 @@ public:
         _global(receiver, receiver.value) {
     }
 
+    ACTION init();
+    ACTION unstake(name from, asset delta);
+    ACTION claim(name from);    
+    ACTION transfer(name from, name to, asset quantity, string memo);
     void onTransfer(name from, name to, extended_asset in, string memo);
-
-    [[eosio::action]] void stake(name from, asset delta);
-    [[eosio::action]] void unstake(name from, asset delta);
-    [[eosio::action]] void claim(name from);
+    void stake(name from, asset delta);
+    void make_profit(uint64_t delta);
 
     struct [[eosio::table]] voter_info {
         name     to;
@@ -75,7 +77,7 @@ public:
         trx.send(get_next_defer_id(), _self, false);
     }    
 
-   void refund(name owner) {
+    ACTION refund(name owner) {
         require_auth( owner );
         
         refunds_table refunds_tbl( _self, owner.value );
@@ -87,25 +89,35 @@ public:
         // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
         // consecutive missed blocks.
 
+        action(
+            permission_level{_self, "active"_n},
+            EOS_CONTRACT, "transfer"_n,
+            make_tuple(_self, owner, req->amount, "unstake refund")
+        ).send();
+
       //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
         //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
         refunds_tbl.erase( req );
     }
 
-    ACTION apply(uint64_t code, uint64_t action) {
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
         if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();
             onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name(code)), transfer_data.memo);
             return;
         }
-    }    
+
+        switch (action) {
+            EOSIO_DISPATCH_HELPER(payout, (unstake)(refund)(claim) )
+        }
+    }
 };
 
 extern "C" {
     [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         payout p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
-        p.apply(code, action);
+        p.apply(receiver, code, action);
         eosio_exit(0);
     }
 }
