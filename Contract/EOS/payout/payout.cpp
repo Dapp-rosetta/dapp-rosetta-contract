@@ -10,7 +10,7 @@ void payout::stake(name from, asset delta) {
     v.payout += g.earnings_per_share * delta.amount / MAGNITUDE;
     _voters.set(v, _self);
     g.total_staked += delta;
-    _global.set(g, _self);    
+    _global.set(g, _self);
 }
 
 void payout::unstake(name from, asset delta) {

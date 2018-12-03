@@ -57,11 +57,7 @@ void payout::claim(const account_name &account)
     v.payout = g.earnings_per_share * v.staked / MAGNITUDE;
     _voters.set(v, _self);
 
-    //singleton_players _players(_self, from);
-    //auto p = _players.get_or_create(_self, player_info{});
-
-    if (delta > 0)
-    {
+    if (delta > 0) {
         send_defer_action(
             permission_level{_self, N(active)},
             N(eosio.token), N(transfer),
