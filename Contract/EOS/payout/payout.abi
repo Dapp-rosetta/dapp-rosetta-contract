@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 21:31:31 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 08:35:59 2018",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -49,10 +49,6 @@
             "name": "refund_request",
             "base": "",
             "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
                 {
                     "name": "request_time",
                     "type": "uint32"
@@ -155,7 +151,7 @@
             "key_types": []
         },
         {
-            "name": "refunds",
+            "name": "refund_request",
             "type": "refund_request",
             "index_type": "i64",
             "key_names": [],
