@@ -1,25 +1,7 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 21:04:24 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 21:21:15 2018",
     "version": "eosio::abi/1.1",
     "structs": [
-        {
-            "name": "apply",
-            "base": "",
-            "fields": [
-                {
-                    "name": "receiver",
-                    "type": "uint64"
-                },
-                {
-                    "name": "code",
-                    "type": "uint64"
-                },
-                {
-                    "name": "action",
-                    "type": "uint64"
-                }
-            ]
-        },
         {
             "name": "claim",
             "base": "",
@@ -133,11 +115,6 @@
     ],
     "types": [],
     "actions": [
-        {
-            "name": "apply",
-            "type": "apply",
-            "ricardian_contract": ""
-        },
         {
             "name": "claim",
             "type": "claim",

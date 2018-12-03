@@ -89,12 +89,18 @@ public:
         // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
         // consecutive missed blocks.
 
+        action(
+            permission_level{_self, "active"_n},
+            EOS_CONTRACT, "transfer"_n,
+            make_tuple(_self, owner, req->amount, "unstake refund")
+        ).send();
+
       //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
         //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
         refunds_tbl.erase( req );
     }
 
-    ACTION apply(uint64_t receiver, uint64_t code, uint64_t action) {
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
         if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();

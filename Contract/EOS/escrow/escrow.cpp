@@ -29,7 +29,7 @@ public:
         eosio_assert(in.quantity.is_valid(), "invalid token transfer");
         eosio_assert(in.quantity.amount > 0, "must transfer a positive amount");
 
-        // eosio_assert(in.contract == _code, "must transfer a positive amount");
+        eosio_assert(in.contract == _code, "code is different");
 
         auto a = asset(in.quantity.amount / 2, in.quantity.symbol);
         auto b = asset(in.quantity.amount - in.quantity.amount / 2, in.quantity.symbol);
