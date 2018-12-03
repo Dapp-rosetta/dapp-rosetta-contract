@@ -44,11 +44,8 @@ public:
     };
 
     struct [[eosio::table]] refund_request {
-        name     owner;
         uint32_t request_time;
         asset    amount;
-
-        uint64_t  primary_key()const { return owner.value; }
     };
 
     struct [[eosio::table]] global_info {
@@ -59,7 +56,7 @@ public:
 
     typedef singleton<"voters"_n, voter_info> singleton_voters;
     typedef singleton<"global"_n, global_info> singleton_global;
-    typedef multi_index<"refunds"_n, refund_request> refunds_table;
+    typedef singleton<"refunds"_n, refund_request> refunds_table;
 
     singleton_global _global;
 
@@ -81,9 +78,10 @@ public:
         require_auth( owner );
         
         refunds_table refunds_tbl( _self, owner.value );
-        auto req = refunds_tbl.find( owner.value );
-        eosio_assert( req != refunds_tbl.end(), "refund request not found" );
-        eosio_assert( req->request_time + refund_delay <= now(), "refund is not available yet" );
+        eosio_assert( refunds_tbl.exists(), "refund request not found" );
+
+        auto req = refunds_tbl.get();
+        eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
         
         // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
         // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
@@ -92,12 +90,12 @@ public:
         action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,
-            make_tuple(_self, owner, req->amount, "unstake refund")
+            make_tuple(_self, owner, req.amount, "unstake refund")
         ).send();
 
       //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
         //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
-        refunds_tbl.erase( req );
+        refunds_tbl.remove();
     }
 
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {
