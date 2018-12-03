@@ -67,6 +67,14 @@ public:
         return g.defer_id;
     }
 
+    void send_defer_refund_action(name from) {
+        transaction out;
+        out.actions.emplace_back(permission_level{ from, "active"_n }, _self, "refund"_n, from);
+        out.delay_sec = refund_delay;         
+        cancel_deferred(from.value); // TODO: Remove this line when replacing deferred trxs is fixed
+        out.send(from.value, from, true);
+    }
+
     template <typename... Args>
     void send_defer_action(Args&&... args) {
         transaction trx;
@@ -74,27 +82,24 @@ public:
         trx.send(get_next_defer_id(), _self, false);
     }    
 
-    ACTION refund(name owner) {
-        require_auth( owner );
+    ACTION refund(name from) {
+        require_auth( from );
         
-        refunds_table refunds_tbl( _self, owner.value );
+        refunds_table refunds_tbl( _self, from.value );
         eosio_assert( refunds_tbl.exists(), "refund request not found" );
-
         auto req = refunds_tbl.get();
         eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
         
         // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
-        // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
+        // allow people to get their tokens earlier than the 1 day delay if the unstake happened immediately after many
         // consecutive missed blocks.
 
         action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,
-            make_tuple(_self, owner, req.amount, "unstake refund")
+            make_tuple(_self, from, req.amount, "unstake refund")
         ).send();
 
-      //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
-        //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
         refunds_tbl.remove();
     }
 

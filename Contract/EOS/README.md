@@ -14,3 +14,8 @@ Make sure you are using the correct version of cdt.
 # Document
 - https://developers.eos.io/eosio-cpp/docs/introduction-to-smart-contracts
 - https://developers.eos.io/eosio-home/docs/your-first-contract
+
+
+# Deferred Txs
+- https://github.com/EOSIO/eos/blob/master/contracts/eosio.system/delegate_bandwidth.cpp#L345
+- https://github.com/EOSIO/eos/blob/master/libraries/chain/apply_context.cpp#L248-L336

@@ -30,13 +30,6 @@ void payout::unstake(name from, asset delta) {
     auto g = _global.get();
     eosio_assert(delta <= v.staked, "don't have enough token for unstake");
 
-    action(
-        permission_level{_self, "active"_n},
-        TOKEN_CONTRACT, "transfer"_n,
-        make_tuple(_self, from, delta,
-                   std::string("transfer token by unstake"))
-    ).send();
-
     if (g.earnings_per_share * delta.amount / MAGNITUDE <= v.payout) {
         v.payout -= g.earnings_per_share * delta.amount / MAGNITUDE;
     } else {
@@ -44,7 +37,14 @@ void payout::unstake(name from, asset delta) {
     }
 
     v.staked -= delta;
-    _voters.set(v, _self);
+    _voters.set(v, _self);    
+
+    refunds_table _refunds( _self, from.value );
+    auto req = _refunds.get_or_create(_self, refund_request{.amount = asset(0, EOS_SYMBOL)});
+    req.request_time = now();
+    req.amount += delta;
+    send_defer_refund_action(from);
+    _refunds.set(req, _self);
 }
 
 void payout::claim(name from) {
@@ -62,15 +62,12 @@ void payout::claim(name from) {
     _voters.set(v, _self);
 
     if (delta.amount > 0) {
-
-        
-
-        send_defer_action(
+        action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,
             make_tuple(_self, from, delta,
                 string("claim dividend."))
-        );
+        ).send();        
     }
 }
 
