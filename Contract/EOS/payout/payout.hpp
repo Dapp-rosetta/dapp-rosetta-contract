@@ -20,6 +20,8 @@ struct st_transfer {
     string memo;
 };
 
+static constexpr uint32_t refund_delay = 1*24*3600;
+
 CONTRACT payout : public contract {
 public:
     payout(name receiver, name code, datastream<const char*> ds): 
@@ -54,8 +56,9 @@ public:
     };
 
     typedef singleton<"voters"_n, voter_info> singleton_voters;
-    typedef singleton<"refund"_n, refund_request> singleton_refund;
     typedef singleton<"global"_n, global_info> singleton_global;
+    typedef multi_index<"refunds"_n, refund_request> refunds_table;
+
     singleton_global _global;
 
     uint64_t get_next_defer_id() {
@@ -72,7 +75,24 @@ public:
         trx.send(get_next_defer_id(), _self, false);
     }    
 
-    void apply(uint64_t code, uint64_t action) {
+   void refund(name owner) {
+        require_auth( owner );
+        
+        refunds_table refunds_tbl( _self, owner.value );
+        auto req = refunds_tbl.find( owner.value );
+        eosio_assert( req != refunds_tbl.end(), "refund request not found" );
+        eosio_assert( req->request_time + refund_delay <= now(), "refund is not available yet" );
+        
+        // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
+        // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
+        // consecutive missed blocks.
+
+      //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
+        //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
+        refunds_tbl.erase( req );
+    }
+
+    ACTION apply(uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
         if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();

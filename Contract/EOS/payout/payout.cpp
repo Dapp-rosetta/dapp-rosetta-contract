@@ -10,7 +10,7 @@ void payout::stake(name from, asset delta) {
     v.payout += g.earnings_per_share * delta.amount / MAGNITUDE;
     _voters.set(v, _self);
     g.total_staked += delta;
-    _global.set(g, _self);    
+    _global.set(g, _self);
 }
 
 void payout::unstake(name from, asset delta) {
@@ -52,10 +52,6 @@ void payout::claim(name from) {
     v.payout = raw_payout;
     _voters.set(v, _self);
 
-    const auto& sym = eosio::symbol_type(EOS_SYMBOL).name();
-    accounts eos_account("eosio.token"_n, _self);
-    auto _balance = eos_account.get(sym).balance;
-
     if (delta.amount > 0 && delta.amount <= _balance) {
         send_defer_action(
             permission_level{_self, "active"_n},
@@ -63,11 +59,7 @@ void payout::claim(name from) {
             make_tuple(_self, from, delta,
                 string("claim dividend."))
         );
-    } else if (delta.amount > 0 && delta.amount > _balance) {
-        singleton_refund _refund(_self, from);
-        auto r = _refund.get_or_create(_self, refund_request{});
-        
-    }   
+    }
 }
 
 
