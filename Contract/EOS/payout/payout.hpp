@@ -20,22 +20,12 @@ struct st_transfer {
     string memo;
 };
 
-static constexpr time refund_delay = 1*24*3600;
-
 CONTRACT payout : public contract {
 public:
     payout(name receiver, name code, datastream<const char*> ds): 
         contract(receiver, code, ds),
         _global(receiver, receiver.value) {
     }
-
-    ACTION init();
-    ACTION unstake(name from, asset delta);
-    ACTION claim(name from);    
-    ACTION transfer(name from, name to, asset quantity, string memo);
-    void onTransfer(name from, name to, extended_asset in, string memo);
-    void stake(name from, asset delta);
-    void make_profit(uint64_t delta);
 
     TABLE voter_info {
         name     to;
@@ -82,26 +72,15 @@ public:
         trx.send(get_next_defer_id(), _self, false);
     }    
 
-    ACTION refund(name from) {
-        require_auth( from );
-        
-        singleton_refunds refunds_tbl( _self, from.value );
-        eosio_assert( refunds_tbl.exists(), "refund request not found" );
-        auto req = refunds_tbl.get();
-        eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
-        
-        // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
-        // allow people to get their tokens earlier than the 1 day delay if the unstake happened immediately after many
-        // consecutive missed blocks.
 
-        action(
-            permission_level{_self, "active"_n},
-            EOS_CONTRACT, "transfer"_n,
-            make_tuple(_self, from, req.amount, "unstake refund")
-        ).send();
-
-        refunds_tbl.remove();
-    }
+    ACTION init();
+    ACTION unstake(name from, asset delta);
+    ACTION claim(name from);    
+    ACTION refund(name from);    
+    ACTION transfer(name from, name to, asset quantity, string memo);
+    void onTransfer(name from, name to, extended_asset in, string memo);
+    void stake(name from, asset delta);
+    void make_profit(uint64_t delta);
 
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
@@ -112,7 +91,12 @@ public:
         }
 
         switch (action) {
-            EOSIO_DISPATCH_HELPER(payout, (unstake)(refund)(claim) )
+            EOSIO_DISPATCH_HELPER(payout, 
+                (init)
+                (unstake)
+                (claim)
+                (refund)
+            )
         }
     }
 };

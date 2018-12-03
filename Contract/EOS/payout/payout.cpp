@@ -71,6 +71,27 @@ void payout::claim(name from) {
     }
 }
 
+void payout::refund(name from) {
+    require_auth( from );
+    
+    singleton_refunds refunds_tbl( _self, from.value );
+    eosio_assert( refunds_tbl.exists(), "refund request not found" );
+    auto req = refunds_tbl.get();
+    eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
+    
+    // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
+    // allow people to get their tokens earlier than the 1 day delay if the unstake happened immediately after many
+    // consecutive missed blocks.
+
+    action(
+        permission_level{_self, "active"_n},
+        EOS_CONTRACT, "transfer"_n,
+        make_tuple(_self, from, req.amount, "unstake refund")
+    ).send();
+
+    refunds_tbl.remove();
+}
+
 void payout::onTransfer(name from, name to, extended_asset in, string memo) {        
 
     if (to != _self) return;
