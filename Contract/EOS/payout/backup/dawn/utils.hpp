@@ -5,13 +5,12 @@
 using namespace eosio;
 using namespace std;
 
-/*
 struct account {
     asset    balance;
     uint64_t primary_key()const { return balance.amount; }
 };
 
-typedef eosio::multi_index<N(accounts), account> accounts;*/
+typedef eosio::multi_index<N(accounts), account> accounts;
 struct rec_reveal {
 };
 

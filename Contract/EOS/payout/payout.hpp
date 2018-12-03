@@ -1,106 +1,89 @@
 ﻿/**
  *  @dev minakokojima, yukiexe
+ *  @env cdt v1.2.x
  */
-
+#pragma once
 #include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
-#include <string>
+#include <eosiolib/singleton.hpp>
+#include <eosiolib/transaction.hpp>
 
 #include "config.hpp"
 #include "utils.hpp"
-
-#define EOS S(4, EOS)
-#define TOKEN_CONTRACT N(eosio.token)
 
 using namespace eosio;
 using namespace std;
 
 struct st_transfer {
-    account_name from;
-    account_name to;
-    asset        quantity;
-    string       memo;
-
-    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
+    name   from;
+    name   to;
+    asset  quantity;
+    string memo;
 };
 
-class payout : public contract
-{
+CONTRACT payout : public contract {
 public:
-    escrow(account_name self) : 
-        contract(self) {
-    }
-    
-    void onTransfer(account_name from, account_name to, extended_asset quantity, std::string memo);   
-
-    void stake(account_name from, uint64_t delta) {
-        require_auth(from);
-        eosio_assert(delta > 0, "must stake a positive amount");
-        singleton_voters _voters(_self, from);
-        auto v = _voters.get_or_create(_self, voter_info{});
-        auto g = _global.get();
-        v.staked += delta;
-        v.payout += g.earnings_per_share * delta / MAGNITUDE;
-        _voters.set(v, _self);
+    payout(name receiver, name code, datastream<const char*> ds): 
+        contract(receiver, code, ds),
+        _global(receiver, receiver.value) {
     }
 
-    void unstake(account_name from, uint64_t delta) {
-        require_auth(from);
-        singleton_voters _voters(_self, from);
-        auto v = _voters.get_or_create(_self, voter_info{});
-        auto g = _global.get();        
-        eosio_assert(delta <= v.staked, "don't have enough CMU for unstake");
+    void onTransfer(name from, name to, extended_asset in, string memo);
 
-        action(
-            permission_level{_self, N(active)},
-            N(dacincubator), N(transfer),
-            make_tuple(_self, from, asset(delta, TOKEN_SYMBOL),
-                std::string("transfer token by unstake"))
-        ).send();
-      
-        if (g.earnings_per_share * delta / MAGNITUDE <= v.payout) {
-            v.payout -= g.earnings_per_share * delta / MAGNITUDE;
-        } else {
-            v.payout = 0;
-        }        
+    [[eosio::action]] void stake(name from, asset delta);
+    [[eosio::action]] void unstake(name from, asset delta);
+    [[eosio::action]] void claim(name from);
 
-        v.staked -= delta;
-        _voters.set(v, _self);
-    }   
+    struct [[eosio::table]] voter_info {
+        name     to;
+        asset    staked;
+        int64_t  payout;        
+    };
 
-    // @abi table voters
-    struct voter_info {
-        account_name to = 0;
-        uint64_t staked = 0;
-        uint64_t payout = 0;
-    };        
+    struct refund_request {
+        name     owner;
+        uint32_t request_time;
+        asset    amount;
 
-    // @abi table global
-    struct st_global {       
-        uint64_t defer_id = 0;
-        uint64_t total_staked;
-        uint128_t earnings_per_share;
-    };   
-    
-    typedef singleton<N(voters),  voter_info>  singleton_voters;    
-    typedef singleton<N(global), st_global> singleton_global;
-    singleton_global _global;     
+        uint64_t  primary_key()const { return owner.value; }
+    };
 
-    void apply(account_name code, action_name action) {
+    struct [[eosio::table]] global_info {
+        uint64_t defer_id;
+        asset    total_staked;
+        int128_t earnings_per_share;
+    };
+
+    typedef singleton<"voters"_n, voter_info> singleton_voters;
+    typedef singleton<"global"_n, global_info> singleton_global;
+    singleton_global _global;
+
+    uint64_t get_next_defer_id() {
+        auto g = _global.get();    
+        g.defer_id += 1;
+        _global.set(g,_self);
+        return g.defer_id;
+    }
+
+    template <typename... Args>
+    void send_defer_action(Args&&... args) {
+        transaction trx;
+        trx.actions.emplace_back(std::forward<Args>(args)...);
+        trx.send(get_next_defer_id(), _self, false);
+    }    
+
+    void apply(uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
-
-        if (action == N(transfer)) {
+        if (action == name("transfer").value) {
             auto transfer_data = unpack_action_data<st_transfer>();
-            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name { .value= code } ), transfer_data.memo);
+            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name(code)), transfer_data.memo);
             return;
         }
-    }               
+    }    
 };
 
 extern "C" {
-    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
-    {
-        escrow p(receiver);
+    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        payout p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
         p.apply(code, action);
         eosio_exit(0);
     }

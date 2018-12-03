@@ -10,12 +10,10 @@ using namespace eosio;
 using namespace std;
 
 struct st_transfer {
-    account_name from;
-    account_name to;
-    asset        quantity;
-    string       memo;
-
-    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
+    name   from;
+    name   to;
+    asset  quantity;
+    string memo;
 };
 
 uint64_t string_to_price(string s) {
@@ -30,64 +28,55 @@ uint64_t string_to_price(string s) {
 } // string_to_price()
 
 
-class eosotcbackup : public contract
-{
-public:
-    eosotcbackup(account_name self) : 
-        contract(self) {
-    }
 
-    // @abi action
+CONTRACT eosotcbackup : public contract {
+public:
+    using contract::contract;
+
     void init();    
-    // @abi action    
     void clean();
-    // @abi action 
     void test();
-    // @abi action    
-    void retrieve(account_name owner, uint64_t order_id, extended_asset ask);    
-    // @abi action
-    void apply(account_name code, action_name action);
-    
-    void onTransfer(account_name from, account_name to,
-                    extended_asset quantity, string memo);
-    void ask(const account_name &owner, const extended_asset &bid, const extended_asset &ask);
-    void take(const account_name &owner, const uint64_t &order_id, const extended_asset &bid, const extended_asset &ask);
-              
-    // @abi table
-    struct order {
+        
+    void onTransfer(name from, name to, extended_asset in, string memo);
+    void retrieve(name owner, uint64_t order_id, extended_asset ask);                    
+    void ask(name owner, extended_asset bid, extended_asset ask);
+    void take(name owner, uint64_t order_id, extended_asset bid, extended_asset ask);
+
+    struct [[eosio::table]] order {
         uint64_t id;
-        account_name owner; // 发起者
+        name owner;         // 发起者
         extended_asset bid; // 提供
         extended_asset ask; // 需求
         auto primary_key() const {return id;}
-    };    
-    typedef eosio::multi_index<N(order), order> order_index;
+    };
+
+    typedef eosio::multi_index<"order"_n, order> order_index;
     
+    /*
     // @abi action
     void receipt(const order& recepit) {
         require_auth(_self);
-    }
+    }*/
+
+    void apply(uint64_t code, uint64_t action) { 
+        auto &thiscontract = *this;
+
+        if (action == name("transfer").value) {
+            auto transfer_data = unpack_action_data<st_transfer>();
+            onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name(code)), transfer_data.memo);
+            return;
+        }
+    
+        if (name(code) != _self) return;
+        switch (action) {
+            //EOSIO_DISPATCH(eosotcbackup, (init)(test)(clean)(retrieve));
+        };
+    }    
 };
 
-void eosotcbackup::apply(account_name code, action_name action) {   
-    auto &thiscontract = *this;
-
-    if (action == N(transfer)) {
-        auto transfer_data = unpack_action_data<st_transfer>();
-        onTransfer(transfer_data.from, transfer_data.to, extended_asset( transfer_data.quantity,  name { .value= code } ), transfer_data.memo);
-        return;
-    }
-
-    if (code != _self) return;
-    switch (action) {
-        EOSIO_API(eosotcbackup, (init)(test)(clean)(retrieve));
-    };
-}
-
 extern "C" {
-    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
-    {
-        eosotcbackup p(receiver);
+    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        eosotcbackup p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
         p.apply(code, action);
         eosio_exit(0);
     }

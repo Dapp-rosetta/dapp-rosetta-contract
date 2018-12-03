@@ -1,0 +1,117 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec  3 07:45:54 2018",
+    "version": "eosio::abi/1.1",
+    "structs": [
+        {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "global_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "defer_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "total_staked",
+                    "type": "asset"
+                },
+                {
+                    "name": "earnings_per_share",
+                    "type": "int128"
+                }
+            ]
+        },
+        {
+            "name": "stake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "delta",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "unstake",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "delta",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "voter_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "staked",
+                    "type": "asset"
+                },
+                {
+                    "name": "payout",
+                    "type": "int64"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "stake",
+            "type": "stake",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "unstake",
+            "type": "unstake",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "global_info",
+            "type": "global_info",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "voter_info",
+            "type": "voter_info",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}
