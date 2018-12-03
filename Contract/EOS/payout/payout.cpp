@@ -39,7 +39,7 @@ void payout::unstake(name from, asset delta) {
     v.staked -= delta;
     _voters.set(v, _self);    
 
-    refunds_table _refunds( _self, from.value );
+    singleton_refunds _refunds( _self, from.value );
     auto req = _refunds.get_or_create(_self, refund_request{.amount = asset(0, EOS_SYMBOL)});
     req.request_time = now();
     req.amount += delta;

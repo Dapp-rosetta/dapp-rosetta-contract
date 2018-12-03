@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Dec  4 04:24:40 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Dec  4 05:59:19 2018",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -51,7 +51,7 @@
             "fields": [
                 {
                     "name": "request_time",
-                    "type": "uint32"
+                    "type": "time"
                 },
                 {
                     "name": "amount",
@@ -114,7 +114,12 @@
             ]
         }
     ],
-    "types": [],
+    "types": [
+        {
+            "new_type_name": "time",
+            "type": "uint32"
+        }
+    ],
     "actions": [
         {
             "name": "claim",

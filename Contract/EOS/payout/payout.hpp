@@ -20,7 +20,7 @@ struct st_transfer {
     string memo;
 };
 
-static constexpr uint32_t refund_delay = 1*24*3600;
+static constexpr time refund_delay = 1*24*3600;
 
 CONTRACT payout : public contract {
 public:
@@ -37,18 +37,18 @@ public:
     void stake(name from, asset delta);
     void make_profit(uint64_t delta);
 
-    struct [[eosio::table]] voter_info {
+    TABLE voter_info {
         name     to;
         asset    staked;
         int64_t  payout;        
     };
 
-    struct [[eosio::table]] refund_request {
-        uint32_t request_time;
+    TABLE refund_request {
+        time     request_time;
         asset    amount;
     };
 
-    struct [[eosio::table]] global_info {
+    TABLE global_info {
         uint64_t defer_id;
         asset    total_staked;
         int128_t earnings_per_share;
@@ -56,7 +56,7 @@ public:
 
     typedef singleton<"voters"_n, voter_info> singleton_voters;
     typedef singleton<"global"_n, global_info> singleton_global;
-    typedef singleton<"refunds"_n, refund_request> refunds_table;
+    typedef singleton<"refunds"_n, refund_request> singleton_refunds;
 
     singleton_global _global;
 
@@ -85,7 +85,7 @@ public:
     ACTION refund(name from) {
         require_auth( from );
         
-        refunds_table refunds_tbl( _self, from.value );
+        singleton_refunds refunds_tbl( _self, from.value );
         eosio_assert( refunds_tbl.exists(), "refund request not found" );
         auto req = refunds_tbl.get();
         eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );

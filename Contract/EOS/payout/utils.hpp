@@ -5,6 +5,8 @@
 using namespace eosio;
 using namespace std;
 
+typedef uint32_t time;
+
 /*
 struct account {
     asset    balance;
