@@ -39,7 +39,7 @@ public:
         int64_t  payout;        
     };
 
-    struct refund_request {
+    struct [[eosio::table]] refund_request {
         name     owner;
         uint32_t request_time;
         asset    amount;
@@ -54,6 +54,7 @@ public:
     };
 
     typedef singleton<"voters"_n, voter_info> singleton_voters;
+    typedef singleton<"refund"_n, refund_request> singleton_refund;
     typedef singleton<"global"_n, global_info> singleton_global;
     singleton_global _global;
 
