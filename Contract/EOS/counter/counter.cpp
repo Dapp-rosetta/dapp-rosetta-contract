@@ -11,26 +11,15 @@ public:
         todos(receiver, receiver.value) {
     }
 
-    ACTION init(name self) {
-        eosio_assert(self == _self, "only contract itself."); 	       
-        // todos.emplace(self, [&](auto& new_todo) {
-        //     new_todo.id = 0;
-        //     new_todo.counter = 1;
-        // });
-        todos.set( todo{ .id = 0, .counter = 1 } , get_self() );   
+    ACTION init() {
+        require_auth(_self);
+        todos.set(todo{}, _self);   
     }
-
+    
     ACTION add(name author) {
-        // auto itr = todos.find(0);
         auto itr = todos.get();
-        // eosio_assert(itr != todos.end(), "No found");
-        // todos.modify(itr, author, [&](auto& new_todo) {
-        //   new_todo.id = 0;
-        //   new_todo.counter += 1;
-        // });
         itr.counter += 1;
-        todos.set( itr, _self) ;
-
+        todos.set(itr, _self);
         eosio::print("Now counter is ", itr.counter);
     }
 
@@ -41,7 +30,6 @@ public:
         uint64_t getCounter() const { return counter; }
     };
 
-    // typedef eosio::multi_index<"todos"_n, todo> todo_table;
     typedef singleton<"todo"_n, todo> todo_table;
     todo_table todos;
 };
