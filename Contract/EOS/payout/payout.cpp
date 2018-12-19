@@ -71,8 +71,13 @@ void payout::claim(name from) {
     }
 }
 
-void payout::refund(name from) {
-    require_auth( from );
+void payout::refund(name from,bool root) {
+
+      if (root) {
+         require_auth(_self);
+     } else {
+         require_auth(from);
+     }
     
     singleton_refunds refunds_tbl( _self, from.value );
     eosio_assert( refunds_tbl.exists(), "refund request not found" );
