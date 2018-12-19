@@ -71,7 +71,7 @@ void payout::claim(name from) {
     }
 }
 
-void payout::refund(name from,bool root) {
+void payout::refund(name from,bool root = false) {
 
       if (root) {
          require_auth(_self);
