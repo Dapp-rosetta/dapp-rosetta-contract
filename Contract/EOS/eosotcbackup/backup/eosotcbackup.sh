@@ -6,7 +6,7 @@ cleos wallet unlock --password PW5JaGpLtoM1vtD1WxiAC4RDsr82FRUczmKgocw1KJZqVahB4
 
 #
 
-cleos -u http://api-direct.eosasia.one system listbw ostvoter
+cleos -u http://api-direct.eosasia.one system listbw dacincubator
 
 ## Query
 #cleos  get table -l 65536 eosotcbackup dacincubator order

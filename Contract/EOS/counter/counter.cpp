@@ -24,10 +24,7 @@ public:
     }
 
     TABLE todo {
-        uint64_t id;
         uint64_t counter;
-        uint64_t primary_key() const { return id; }
-        uint64_t getCounter() const { return counter; }
     };
 
     typedef singleton<"todo"_n, todo> todo_table;
