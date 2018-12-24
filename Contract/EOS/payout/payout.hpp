@@ -59,7 +59,10 @@ public:
 
     void send_defer_refund_action(name from) {
         transaction out;
-        out.actions.emplace_back(permission_level{ _self, "active"_n }, _self, "refund"_n, make_tuple(from, true));
+        out.actions.emplace_back(
+            permission_level{ _self, "active"_n}, 
+            _self, "refund"_n, 
+            from);
         out.delay_sec = refund_delay;         
         cancel_deferred(from.value); // TODO: Remove this line when replacing deferred trxs is fixed
         out.send(from.value, _self, true);
@@ -76,7 +79,7 @@ public:
     ACTION init();
     ACTION unstake(name from, asset delta);
     ACTION claim(name from);    
-    ACTION refund(name from,bool root);    
+    ACTION refund(name from);    
     ACTION transfer(name from, name to, asset quantity, string memo);
     void onTransfer(name from, name to, extended_asset in, string memo);
     void stake(name from, asset delta);
