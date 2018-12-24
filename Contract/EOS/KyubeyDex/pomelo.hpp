@@ -1,29 +1,23 @@
+#pragma once
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <eosiolib/multi_index.hpp>
 #include <eosiolib/singleton.hpp>
-#include <math.h>
-#include <string>
-#include <vector>
-
-#define EOS S(4, EOS)
-#define TOKEN_CONTRACT N(eosio.token)
-
-const uint64_t PRICE_SCALE = 100000000;
-
-//typedef capi_name account_name ;
-//typedef capi_name action_name ;
+#include <cmath>
 
 using namespace eosio;
 using namespace std;
 
-static uint64_t my_string_to_symbol(const char* str) 
-{
+typedef uint32_t time;
+
+const auto EOS_SYMBOL = eosio::symbol("EOS", 4);
+const auto TOKEN_CONTRACT = "eosio.token"_n;
+
+constexpr uint64_t PRICE_SCALE = 100000000;
+
+static uint64_t my_string_to_symbol(const char* str) {
     uint32_t len = 0;
-    while (str[len]) 
-    {
-        ++len;
-    }
+    while (str[len]) ++len;
+    
     uint64_t result = 0;
     for (uint32_t i = 0; i < len; ++i) {
         // All characters must be upper case alaphabets
@@ -33,177 +27,156 @@ static uint64_t my_string_to_symbol(const char* str)
     return result >> 8;
 }
 
-
-
-class pomelo : public eosio::contract
-{
+CONTRACT pomelo : public eosio::contract {
 public:
-    pomelo(account_name self) :
-        contract(self) {
-    }
+    using contract::contract;
 
-    // @abi action
-    void addfav(string symbol) {            
-    }    
+    ACTION addfav(string str_symbol) {}
+    ACTION removefav(string str_symbol) {}
+    ACTION clean(string str_symbol);
+    ACTION cancelsell(name account, string str_symbol, uint64_t id);
+    ACTION cancelbuy(name account, string str_symbol, uint64_t id);
+    ACTION setwhitelist(string str_symbol, name issuer);
+    ACTION rmwhitelist(string str_symbol);
+    ACTION login(string token) {}
 
-    // @abi action
-    void removefav(string symbol) {        
-    }        
-
-    // @abi action
-    void clean(string symbol);    
-
-    // @abi action
-    void cancelsell(account_name account, string symbol, uint64_t id);
-
-    // @abi action
-    void cancelbuy(account_name account, string symbol, uint64_t id);
-
-    // @abi action
-    void setwhitelist(string symbol, account_name issuer);
-
-    // @abi action
-    void rmwhitelist(string symbol);
-
-    // @abi action
-    void login(string token) {}
-
-    void apply(account_name contract, action_name act);   
-
-    void onTransfer(account_name from,
-                    account_name to,
-                    asset        quantity,
-                    string       memo);  
-
-    void transfer(account_name from,
-                  account_name to,
-                  asset        quantity,
-                  string       memo);    
-
-    // @abi table buyorder i64
-    struct buyorder { 
+    TABLE buyorder { 
         uint64_t id;
-        account_name account;
+        capi_name account;
         asset bid;
         asset ask;
         uint64_t unit_price;
         time timestamp;
 
-        uint64_t primary_key() const { return id; }
+        auto primary_key() const { return id; }
         uint64_t get_price() const { return -unit_price; }
         EOSLIB_SERIALIZE(buyorder, (id)(account)(bid)(ask)(unit_price)(timestamp))
     };
-    typedef eosio::multi_index<N(buyorder), buyorder, 
-        indexed_by<N(byprice), const_mem_fun<buyorder, uint64_t, &buyorder::get_price>>
-    > buyorders;
 
-    // @abi table sellorder i64
-    struct sellorder {
+    TABLE sellorder {
         uint64_t id;
-        account_name account;
+        capi_name account;
         asset bid;
         asset ask;
         uint64_t unit_price;
         time timestamp;
 
-        uint64_t primary_key() const { return id; }
+        auto primary_key() const { return id; }
         uint64_t get_price() const { return unit_price; }
         EOSLIB_SERIALIZE(sellorder, (id)(account)(bid)(ask)(unit_price)(timestamp))
     };
-    typedef eosio::multi_index<N(sellorder), sellorder, 
-        indexed_by<N(byprice), const_mem_fun<sellorder, uint64_t, &sellorder::get_price>>
-    > sellorders;
- 
-    // @abi table whitelist i64
-    struct whitelist {
-        account_name contract;
-    };
-    typedef singleton<N(whitelist), whitelist> whitelist_index;
-    
-    // @abi action
-    void buyreceipt(buyorder o) {
-        require_auth(_self);
-    }    
 
-    // @abi action
-    void sellreceipt(sellorder t) {
-        require_auth(_self);
-    }   
+    TABLE whitelist {
+        capi_name contract;
+    };
+
+    typedef eosio::multi_index<"buyorder"_n, buyorder, 
+        indexed_by<"byprice"_n, const_mem_fun<buyorder, uint64_t, &buyorder::get_price>>
+    > buyorders_t;
+    
+    typedef eosio::multi_index<"sellorder"_n, sellorder, 
+        indexed_by<"byprice"_n, const_mem_fun<sellorder, uint64_t, &sellorder::get_price>>
+    > sellorders_t;
+ 
+    typedef singleton<"whitelist"_n, whitelist> whitelist_index_t;
 
     struct match_record {
         uint64_t id;
-        account_name bidder;
-        account_name asker;
+        capi_name bidder;
+        capi_name asker;
         asset bid;
         asset ask;
         uint64_t unit_price;
         time timestamp;
-    };    
+    };
 
-    // @abi action
-    void buymatch(match_record t) {
+    // rec
+    ACTION buyreceipt(buyorder o) {
+        require_auth(_self);
+    }    
+
+    ACTION sellreceipt(sellorder t) {
+        require_auth(_self);
+    }   
+
+    ACTION buymatch(match_record t) {
         require_auth(_self);
     }
-    // @abi action
-    void sellmatch(match_record t) {
+
+    ACTION sellmatch(match_record t) {
         require_auth(_self);
     }
+
+    void onTransfer( name from, name to, asset bid, string memo );
+    void transfer(name from, name to, asset quantity, string memo) {}
 
 private:
-    uint64_t my_string_to_symbol(uint8_t precision, const char* str);
-    bool is_valid_unit_price(uint64_t eos, uint64_t non_eos);
-    void assert_whitelist(string symbol, account_name contract);
-    void assert_whitelist(symbol_type symbol, account_name contract);
-    uint64_t string_to_amount(string s);
     vector<string> split(string src, char c);
-    account_name get_contract_name_by_symbol(string symbol);
-    account_name get_contract_name_by_symbol(symbol_type symbol);
-    void publish_buyorder_if_needed(account_name account, asset bid, asset ask);
-    void publish_sellorder_if_needed(account_name account, asset bid, asset ask);
-    void buy(account_name account, asset bid, asset ask);
-    void sell(account_name account, asset bid, asset ask);    
+    uint64_t string_to_amount(string s);
+
+    uint64_t my_string_to_symbol(uint8_t precision, const char* str);
+    name get_contract_name_by_symbol(symbol sym);
+    inline name get_contract_name_by_symbol(string str_symbol) {
+        return get_contract_name_by_symbol( symbol(str_symbol,4) );
+    }
+
+    void assert_whitelist(symbol sym, name contract);
+    void assert_whitelist(string str_symbol, name contract);
+    void publish_buyorder_if_needed(name account, asset bid, asset ask);
+    void publish_sellorder_if_needed(name account, asset bid, asset ask);
+    void buy(name account, asset bid, asset ask);
+    void sell(name account, asset bid, asset ask);
+
+    inline bool is_valid_unit_price(uint64_t eos, uint64_t non_eos) {
+        return eos * PRICE_SCALE % non_eos == 0;
+    }
+
+public:
+    void apply(uint64_t receiver, uint64_t code, uint64_t action);    
 };
 
-        struct st_transfer
-        {
-            account_name from;
-            account_name to;
-            asset        quantity;
-            string       memo;
+struct st_transfer {
+    name from;
+    name to;
+    asset        quantity;
+    string       memo;
 
-            EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
-         };
+    EOSLIB_SERIALIZE( st_transfer, (from)(to)(quantity)(memo) )
+};
 
-
-void pomelo::apply(account_name contract, action_name act) 
-{
+void pomelo::apply(uint64_t receiver, uint64_t code, uint64_t action) {
     auto &thiscontract = *this;
-    if (act == N(transfer)) {
-        auto transfer = unpack_action_data<st_transfer>();
-        if (transfer.quantity.symbol == EOS) 
-        {
-            eosio_assert(contract == TOKEN_CONTRACT, "Transfer EOS must go through eosio.token...");
-        }
+    if (action == ( "transfer"_n ).value ) {
+        auto transfer_data = unpack_action_data<st_transfer>();
+        if (transfer_data.quantity.symbol == EOS_SYMBOL)
+            eosio_assert(name(code) == TOKEN_CONTRACT, "Transfer EOS must go through eosio.token...");
         else
-        {
-            assert_whitelist(transfer.quantity.symbol, contract);
-        }
-        onTransfer(transfer.from, transfer.to, transfer.quantity, transfer.memo);
+            assert_whitelist(transfer_data.quantity.symbol, name(code));
+        
+        onTransfer(transfer_data.from, transfer_data.to, transfer_data.quantity, transfer_data.memo);
         return;
     }
 
-    if (contract != _self) return;
+    if (code != get_self().value) return;
 
-    switch (act) {
-        EOSIO_API(pomelo, (clean)(cancelbuy)(cancelsell)(setwhitelist)(rmwhitelist)(login)(addfav) )
-    };
+    switch (action) {
+        EOSIO_DISPATCH_HELPER(pomelo,
+            (clean)
+            (cancelbuy)
+            (cancelsell)
+            (setwhitelist)
+            (rmwhitelist)
+            (login)
+            (addfav)
+            (removefav)
+        )
+    }
 }
 
 extern "C" {
-    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) 
-    {
-        pomelo p(receiver);
-        p.apply(code, action);
+    [[noreturn]] void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        pomelo p( name(receiver), name(code), datastream<const char*>(nullptr, 0) );
+        p.apply(receiver, code, action);
         eosio_exit(0);
     }
 }
