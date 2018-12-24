@@ -61,7 +61,7 @@ public:
             onTransfer(transfer_data.from, transfer_data.to, extended_asset(transfer_data.quantity, name { .value= code } ), transfer_data.memo);
             return;
         }
-    }                    
+    }
 };
 
 extern "C" {
