@@ -20,8 +20,6 @@ struct st_transfer {
     string memo;
 };
 
-static constexpr uint32_t refund_delay = 1*24*3600;
-
 CONTRACT payout : public contract {
 public:
     payout(name receiver, name code, datastream<const char*> ds): 
@@ -29,26 +27,18 @@ public:
         _global(receiver, receiver.value) {
     }
 
-    ACTION init();
-    ACTION unstake(name from, asset delta);
-    ACTION claim(name from);    
-    ACTION transfer(name from, name to, asset quantity, string memo);
-    void onTransfer(name from, name to, extended_asset in, string memo);
-    void stake(name from, asset delta);
-    void make_profit(uint64_t delta);
-
-    struct [[eosio::table]] voter_info {
+    TABLE voter_info {
         name     to;
         asset    staked;
         int64_t  payout;        
     };
 
-    struct [[eosio::table]] refund_request {
-        uint32_t request_time;
+    TABLE refund_request {
+        time     request_time;
         asset    amount;
     };
 
-    struct [[eosio::table]] global_info {
+    TABLE global_info {
         uint64_t defer_id;
         asset    total_staked;
         int128_t earnings_per_share;
@@ -56,7 +46,7 @@ public:
 
     typedef singleton<"voters"_n, voter_info> singleton_voters;
     typedef singleton<"global"_n, global_info> singleton_global;
-    typedef singleton<"refunds"_n, refund_request> refunds_table;
+    typedef singleton<"refunds"_n, refund_request> singleton_refunds;
 
     singleton_global _global;
 
@@ -67,6 +57,14 @@ public:
         return g.defer_id;
     }
 
+    void send_defer_refund_action(name from) {
+        transaction out;
+        out.actions.emplace_back(permission_level{ _self, "active"_n }, _self, "refund"_n, make_tuple(from, true));
+        out.delay_sec = refund_delay;         
+        cancel_deferred(from.value); // TODO: Remove this line when replacing deferred trxs is fixed
+        out.send(from.value, _self, true);
+    }
+
     template <typename... Args>
     void send_defer_action(Args&&... args) {
         transaction trx;
@@ -74,29 +72,15 @@ public:
         trx.send(get_next_defer_id(), _self, false);
     }    
 
-    ACTION refund(name owner) {
-        require_auth( owner );
-        
-        refunds_table refunds_tbl( _self, owner.value );
-        eosio_assert( refunds_tbl.exists(), "refund request not found" );
 
-        auto req = refunds_tbl.get();
-        eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
-        
-        // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
-        // allow people to get their tokens earlier than the 3 day delay if the unstake happened immediately after many
-        // consecutive missed blocks.
-
-        action(
-            permission_level{_self, "active"_n},
-            EOS_CONTRACT, "transfer"_n,
-            make_tuple(_self, owner, req.amount, "unstake refund")
-        ).send();
-
-      //  INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio.stake),N(active)},
-        //                                            { N(eosio.stake), req->owner, req->net_amount + req->cpu_amount, std::string("unstake") } );
-        refunds_tbl.remove();
-    }
+    ACTION init();
+    ACTION unstake(name from, asset delta);
+    ACTION claim(name from);    
+    ACTION refund(name from,bool root);    
+    ACTION transfer(name from, name to, asset quantity, string memo);
+    void onTransfer(name from, name to, extended_asset in, string memo);
+    void stake(name from, asset delta);
+    void make_profit(uint64_t delta);
 
     void apply(uint64_t receiver, uint64_t code, uint64_t action) {
         auto &thiscontract = *this;
@@ -107,7 +91,12 @@ public:
         }
 
         switch (action) {
-            EOSIO_DISPATCH_HELPER(payout, (unstake)(refund)(claim) )
+            EOSIO_DISPATCH_HELPER(payout, 
+                (init)
+                (unstake)
+                (claim)
+                (refund)
+            )
         }
     }
 };

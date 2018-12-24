@@ -30,13 +30,6 @@ void payout::unstake(name from, asset delta) {
     auto g = _global.get();
     eosio_assert(delta <= v.staked, "don't have enough token for unstake");
 
-    action(
-        permission_level{_self, "active"_n},
-        TOKEN_CONTRACT, "transfer"_n,
-        make_tuple(_self, from, delta,
-                   std::string("transfer token by unstake"))
-    ).send();
-
     if (g.earnings_per_share * delta.amount / MAGNITUDE <= v.payout) {
         v.payout -= g.earnings_per_share * delta.amount / MAGNITUDE;
     } else {
@@ -44,7 +37,14 @@ void payout::unstake(name from, asset delta) {
     }
 
     v.staked -= delta;
-    _voters.set(v, _self);
+    _voters.set(v, _self);    
+
+    singleton_refunds _refunds( _self, from.value );
+    auto req = _refunds.get_or_create(_self, refund_request{.amount = asset(0, EOS_SYMBOL)});
+    req.request_time = now();
+    req.amount += delta;
+    send_defer_refund_action(from);
+    _refunds.set(req, _self);
 }
 
 void payout::claim(name from) {
@@ -62,18 +62,40 @@ void payout::claim(name from) {
     _voters.set(v, _self);
 
     if (delta.amount > 0) {
-
-        
-
-        send_defer_action(
+        action(
             permission_level{_self, "active"_n},
             EOS_CONTRACT, "transfer"_n,
             make_tuple(_self, from, delta,
                 string("claim dividend."))
-        );
+        ).send();        
     }
 }
 
+void payout::refund(name from,bool root = false) {
+
+      if (root) {
+         require_auth(_self);
+     } else {
+         require_auth(from);
+     }
+    
+    singleton_refunds refunds_tbl( _self, from.value );
+    eosio_assert( refunds_tbl.exists(), "refund request not found" );
+    auto req = refunds_tbl.get();
+    eosio_assert( req.request_time + refund_delay <= now(), "refund is not available yet" );
+    
+    // Until now() becomes NOW, the fact that now() is the timestamp of the previous block could in theory
+    // allow people to get their tokens earlier than the 1 day delay if the unstake happened immediately after many
+    // consecutive missed blocks.
+
+    action(
+        permission_level{_self, "active"_n},
+        EOS_CONTRACT, "transfer"_n,
+        make_tuple(_self, from, req.amount, "unstake refund")
+    ).send();
+
+    refunds_tbl.remove();
+}
 
 void payout::onTransfer(name from, name to, extended_asset in, string memo) {        
 
