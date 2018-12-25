@@ -127,6 +127,9 @@ private:
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
 
+    template <typename T>
+    void market_price_trade( const bool &isBuyorder, name account, asset bid, asset ask );
+
     inline bool is_valid_unit_price(uint64_t eos, uint64_t non_eos) {
         return eos * PRICE_SCALE % non_eos == 0;
     }
