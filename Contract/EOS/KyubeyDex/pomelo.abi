@@ -1,0 +1,344 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec 24 17:57:32 2018",
+    "version": "eosio::abi/1.1",
+    "structs": [
+        {
+            "name": "addfav",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "buymatch",
+            "base": "",
+            "fields": [
+                {
+                    "name": "t",
+                    "type": "match_record"
+                }
+            ]
+        },
+        {
+            "name": "buyorder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "bid",
+                    "type": "asset"
+                },
+                {
+                    "name": "ask",
+                    "type": "asset"
+                },
+                {
+                    "name": "unit_price",
+                    "type": "uint64"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time"
+                }
+            ]
+        },
+        {
+            "name": "buyreceipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "o",
+                    "type": "buyorder"
+                }
+            ]
+        },
+        {
+            "name": "cancelbuy",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                },
+                {
+                    "name": "id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "cancelsell",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                },
+                {
+                    "name": "id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "clean",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "login",
+            "base": "",
+            "fields": [
+                {
+                    "name": "token",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "match_record",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bidder",
+                    "type": "name"
+                },
+                {
+                    "name": "asker",
+                    "type": "name"
+                },
+                {
+                    "name": "bid",
+                    "type": "asset"
+                },
+                {
+                    "name": "ask",
+                    "type": "asset"
+                },
+                {
+                    "name": "unit_price",
+                    "type": "uint64"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time"
+                }
+            ]
+        },
+        {
+            "name": "removefav",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "rmwhitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "sellmatch",
+            "base": "",
+            "fields": [
+                {
+                    "name": "t",
+                    "type": "match_record"
+                }
+            ]
+        },
+        {
+            "name": "sellorder",
+            "base": "",
+            "fields": [
+                {
+                    "name": "id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "bid",
+                    "type": "asset"
+                },
+                {
+                    "name": "ask",
+                    "type": "asset"
+                },
+                {
+                    "name": "unit_price",
+                    "type": "uint64"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time"
+                }
+            ]
+        },
+        {
+            "name": "sellreceipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "t",
+                    "type": "sellorder"
+                }
+            ]
+        },
+        {
+            "name": "setwhitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                },
+                {
+                    "name": "issuer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "whitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract",
+                    "type": "name"
+                }
+            ]
+        }
+    ],
+    "types": [
+        {
+            "new_type_name": "time",
+            "type": "uint32"
+        }
+    ],
+    "actions": [
+        {
+            "name": "addfav",
+            "type": "addfav",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "buymatch",
+            "type": "buymatch",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "buyreceipt",
+            "type": "buyreceipt",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cancelbuy",
+            "type": "cancelbuy",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "cancelsell",
+            "type": "cancelsell",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "clean",
+            "type": "clean",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "login",
+            "type": "login",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "removefav",
+            "type": "removefav",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "rmwhitelist",
+            "type": "rmwhitelist",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sellmatch",
+            "type": "sellmatch",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "sellreceipt",
+            "type": "sellreceipt",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "setwhitelist",
+            "type": "setwhitelist",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "buyorder",
+            "type": "buyorder",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "sellorder",
+            "type": "sellorder",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "whitelist",
+            "type": "whitelist",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": [],
+    "abi_extensions": []
+}

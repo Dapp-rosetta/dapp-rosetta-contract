@@ -1,10 +1,55 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 13 19:26:18 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sun Dec 23 22:35:04 2018",
     "version": "eosio::abi/1.1",
-    "structs": [],
+    "structs": [
+        {
+            "name": "add",
+            "base": "",
+            "fields": [
+                {
+                    "name": "author",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "init",
+            "base": "",
+            "fields": []
+        },
+        {
+            "name": "todo",
+            "base": "",
+            "fields": [
+                {
+                    "name": "counter",
+                    "type": "uint64"
+                }
+            ]
+        }
+    ],
     "types": [],
-    "actions": [],
-    "tables": [],
+    "actions": [
+        {
+            "name": "add",
+            "type": "add",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "init",
+            "type": "init",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "todo",
+            "type": "todo",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
     "ricardian_clauses": [],
     "variants": [],
     "abi_extensions": []
