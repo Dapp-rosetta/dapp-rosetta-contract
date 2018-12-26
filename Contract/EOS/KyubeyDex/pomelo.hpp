@@ -10,6 +10,7 @@ using namespace std;
 typedef uint32_t time;
 
 const auto EOS_SYMBOL = eosio::symbol("EOS", 4);
+const auto EOS_CONTRACT = "eosio.token"_n;
 const auto TOKEN_CONTRACT = "eosio.token"_n;
 
 constexpr uint64_t PRICE_SCALE = 100000000;
@@ -127,7 +128,8 @@ private:
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
 
-    template <typename T>
+    inline void action_transfer_token(const name &token_contract, const name &to, const asset &quantity );
+    void match_processing(const bool &isBuyorder, const name &token_contract, const match_record &m_rec);
     void market_price_trade( const bool &isBuyorder, name account, asset bid, asset ask );
 
     inline bool is_valid_unit_price(uint64_t eos, uint64_t non_eos) {
