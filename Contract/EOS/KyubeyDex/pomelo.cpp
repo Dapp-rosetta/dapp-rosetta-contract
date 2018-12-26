@@ -1,5 +1,11 @@
 #include "pomelo.hpp"
 
+/**
+ * @brief Clear all transactions in a currency
+ * 
+ * @param str_symbol - Currency's name
+ **/
+
 void pomelo::clean(string str_symbol) {
     require_auth(get_self());
     /*
@@ -64,12 +70,23 @@ uint64_t pomelo::my_string_to_symbol(uint8_t precision, const char* str) {
     result |= uint64_t(precision);
     return result >> 8;
 }
-
+/**
+ * @brief Check if the currency corresponds to the correct contract
+ * 
+ * @param sym - currency
+ * @param contract - contract
+ **/
 void pomelo::assert_whitelist(symbol sym, name contract) {
     auto account = get_contract_name_by_symbol(sym);
     eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
 }
 
+/**
+ * @brief Check if the currency corresponds to the correct contract
+ * 
+ * @param sym_symbol - currency
+ * @param contract - contract
+ **/
 void pomelo::assert_whitelist(string str_symbol, name contract) {
     auto account = get_contract_name_by_symbol(str_symbol);
     eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
@@ -103,11 +120,24 @@ vector<string> pomelo::split(string src, char c) {
   return z;
 }
 
+/**
+ * @brief Find the corresponding contract in the whitelist by currency
+ * 
+ * @param sym_symbol - currency
+ **/
+
 name pomelo::get_contract_name_by_symbol(symbol sym) {
     auto whitelist = whitelist_index_t(get_self(), sym.raw());
     return name(whitelist.get().contract);
 }
 
+/**
+ * @brief If the buy operation does not match exactly, add the purchased demand to the table and print the log
+ * 
+ * @param account - buyer
+ * @param bid - Bid (EOS)
+ * @param ask - Other currencies required
+ **/
 void pomelo::publish_buyorder_if_needed(name account, asset bid, asset ask) {
     // Validate bid & ask symbol
     eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS.");
@@ -132,6 +162,13 @@ void pomelo::publish_buyorder_if_needed(name account, asset bid, asset ask) {
     }
 }
 
+/**
+ * @brief If the sell operation does not match exactly, add the Selling demand to the table and print the log
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask (EOS)
+ **/
 void pomelo::publish_sellorder_if_needed(name account, asset bid, asset ask) {
     // Validate bid & ask symbol
     eosio_assert(bid.symbol != EOS_SYMBOL, "Bid must be non-EOS");
@@ -154,6 +191,15 @@ void pomelo::publish_sellorder_if_needed(name account, asset bid, asset ask) {
     }
 }
 
+/**
+ * @brief In the sell form, the unit price is searched for from the low to the high and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - buyer
+ * @param bid - (EOS)
+ * @param ask - Other currencies required
+ * 
+ **/
 void pomelo::buy(name account, asset bid, asset ask) {
     eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS");                                    // Validate bid symbol
     eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");                             // Validate ask symbol
@@ -219,6 +265,15 @@ void pomelo::buy(name account, asset bid, asset ask) {
     publish_buyorder_if_needed(account, bid, ask);
 }
 
+/**
+ * @brief In the buy form, the unit price is searched for from the high to the low and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask(EOS)
+ * 
+ **/
 void pomelo::sell(name account, asset bid, asset ask) {
     // Validate bid symbol
     // Validate ask symbol
@@ -289,6 +344,13 @@ void pomelo::sell(name account, asset bid, asset ask) {
     publish_sellorder_if_needed(account, bid, ask);
 }
 
+/**
+ * @brief Cancel an existing buy order
+ * 
+ * @param account - buyer
+ * @param str_symbol - Currency name
+ * @param id - Order id 
+ **/
 void pomelo::cancelbuy(name account, string str_symbol, uint64_t id) {
     require_auth(account);
 
@@ -308,6 +370,13 @@ void pomelo::cancelbuy(name account, string str_symbol, uint64_t id) {
     buy_table.erase(itr);
 }
 
+/**
+ * @brief Cancel an existing sell order
+ * 
+ * @param account - buyer
+ * @param str_symbol - Currency name
+ * @param id - Order id 
+ **/
 void pomelo::cancelsell(name account, string str_symbol, uint64_t id) {
     require_auth(account);
     
@@ -327,6 +396,12 @@ void pomelo::cancelsell(name account, string str_symbol, uint64_t id) {
     sell_table.erase(itr);
 }
 
+/**
+ * @brief Set the whitelist of currencies
+ * 
+ * @param str_symbol - Currency name
+ * @param issuer - Currency contract address
+ **/
 void pomelo::setwhitelist(string str_symbol, name issuer) {
     require_auth(get_self());
     whitelist w; w.contract = issuer.value;
@@ -334,12 +409,25 @@ void pomelo::setwhitelist(string str_symbol, name issuer) {
     whitelist.set(w, get_self()); 
 }
 
+/**
+ * @brief Remove currency from whitelist
+ * 
+ * @param str_symbol - Currency name
+ **/
 void pomelo::rmwhitelist(string str_symbol) {
     require_auth(get_self());
     whitelist_index_t whitelist(get_self(), symbol(str_symbol, 4).raw());
     whitelist.remove();
 }
 
+/**
+ * @brief Determining the transfer type by memo
+ * 
+ * @param from - The originator of the transfer
+ * @param to - Transfer address
+ * @param bid - Transfer amount
+ * @param memo - Use of transfer
+ **/
 void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
     // x.xxxx KBY price 0.0000000
     // x.xxxx EOS price 0.0000000 
