@@ -60,28 +60,23 @@ public:
     ACTION rmwhitelist(string str_symbol);
     ACTION login(string token) {}
 
-    TABLE buyorder { 
+    struct st_order {
         uint64_t id;
         capi_name account;
         asset bid;
         asset ask;
         uint64_t unit_price;
         time timestamp;
-
+        
         auto primary_key() const { return id; }
+    };
+
+    TABLE buyorder : st_order {
         uint64_t get_price() const { return -unit_price; }
         EOSLIB_SERIALIZE(buyorder, (id)(account)(bid)(ask)(unit_price)(timestamp))
     };
 
-    TABLE sellorder {
-        uint64_t id;
-        capi_name account;
-        asset bid;
-        asset ask;
-        uint64_t unit_price;
-        time timestamp;
-
-        auto primary_key() const { return id; }
+    TABLE sellorder : st_order {
         uint64_t get_price() const { return unit_price; }
         EOSLIB_SERIALIZE(sellorder, (id)(account)(bid)(ask)(unit_price)(timestamp))
     };
