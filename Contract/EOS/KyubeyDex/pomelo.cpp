@@ -37,19 +37,6 @@ void pomelo::clean(string str_symbol) {
     }  
 }
 
-uint64_t pomelo::my_string_to_symbol(uint8_t precision, const char* str) {
-    uint32_t len = 0;
-    while (str[len]) {
-        ++len;
-    }
-    uint64_t result = 0;
-    for (uint32_t i = 0; i < len; ++i) {
-        result |= (uint64_t(str[i]) << (8 * (i + 1)));
-    }
-    result |= uint64_t(precision);
-    return result >> 8;
-}
-
 uint64_t pomelo::string_to_amount(string s) {
     uint64_t z = 0;
     for (int i=0;i<s.size();++i) {

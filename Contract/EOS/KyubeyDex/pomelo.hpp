@@ -28,6 +28,18 @@ static uint64_t my_string_to_symbol(const char* str) {
     return result >> 8;
 }
 
+static uint64_t my_string_to_symbol(uint8_t precision, const char* str) {
+    uint32_t len = 0;
+    while (str[len]) ++len;
+
+    uint64_t result = 0;
+    for (uint32_t i = 0; i < len; ++i) {
+        result |= (uint64_t(str[i]) << (8 * (i + 1)));
+    }
+    result |= uint64_t(precision);
+    return result >> 8;
+}
+
 CONTRACT pomelo : public eosio::contract {
 public:
     using contract::contract;
@@ -122,7 +134,6 @@ private:
     vector<string> split(string src, char c);
     uint64_t string_to_amount(string s);
 
-    uint64_t my_string_to_symbol(uint8_t precision, const char* str);
     name get_contract_name_by_symbol(symbol sym);
     inline name get_contract_name_by_symbol(string str_symbol) {
         return get_contract_name_by_symbol( symbol(str_symbol,4) );
