@@ -7,6 +7,8 @@
 using namespace eosio;
 using namespace std;
 
+namespace kyubey {
+
 typedef uint32_t time;
 
 constexpr auto EOS_SYMBOL = eosio::symbol("EOS", 4);
@@ -205,3 +207,5 @@ extern "C" {
         eosio_exit(0);
     }
 }
+
+} /// namespace kyubey

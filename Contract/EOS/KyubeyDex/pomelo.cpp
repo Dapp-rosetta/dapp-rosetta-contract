@@ -4,6 +4,8 @@
 
 #include "pomelo.hpp"
 
+namespace kyubey {
+
 /**
  * @brief Clean buyorders & sellorders table
  *
@@ -421,3 +423,5 @@ void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
         sell(from, bid, ask);
     }
 }
+
+} /// namespace kyubey 
