@@ -1,21 +1,17 @@
+/**
+ *  @copyright
+ */
+
 #include "pomelo.hpp"
 
+/**
+ * @brief Clean buyorders & sellorders table
+ *
+ * @param str_symbol - token's symbol
+ */
 void pomelo::clean(string str_symbol) {
     require_auth(get_self());
-    /*
-    while (buy_table.begin() != buy_table.end()) {
-        buy_table.erase(buy_table.begin());
-    }*/
-    /*
-    auto t = buyorders_t(get_self(), my_string_to_symbol(4, "ITECOIN"));
-    while (t.begin() != t.end()) {
-        t.erase(t.find(t.begin()->id));
-    }
-    auto t2 = sellorders_t(get_self(), my_string_to_symbol(4, "ITECOIN"));
-    while (t2.begin() != t2.end()) {
-        t2.erase(t2.find(t2.begin()->id));
-    }*/
-
+   
     buyorders_t t(get_self(), symbol(str_symbol, 4).raw());
     while (t.begin() != t.end()) {    
         auto itr = t.begin();
@@ -41,17 +37,6 @@ void pomelo::clean(string str_symbol) {
     }  
 }
 
-static string symbol_to_string( uint64_t symbol ) {
-    symbol >>= 8;
-    string z;
-    for( uint32_t i = 0; symbol ;  ) {
-        z += (char)(symbol & 0xff);
-        symbol >>= 8;
-    }
-
-    return z;
-}
-
 uint64_t pomelo::my_string_to_symbol(uint8_t precision, const char* str) {
     uint32_t len = 0;
     while (str[len]) {
@@ -64,18 +49,6 @@ uint64_t pomelo::my_string_to_symbol(uint8_t precision, const char* str) {
     result |= uint64_t(precision);
     return result >> 8;
 }
-
-void pomelo::assert_whitelist(symbol sym, name contract) {
-    auto account = get_contract_name_by_symbol(sym);
-    eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
-}
-
-void pomelo::assert_whitelist(string str_symbol, name contract) {
-    auto account = get_contract_name_by_symbol(str_symbol);
-    eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
-}
-
-
 
 uint64_t pomelo::string_to_amount(string s) {
     uint64_t z = 0;
@@ -104,8 +77,9 @@ vector<string> pomelo::split(string src, char c) {
 }
 
 name pomelo::get_contract_name_by_symbol(symbol sym) {
-    auto whitelist = whitelist_index_t(get_self(), sym.raw());
-    return name(whitelist.get().contract);
+    if ( sym == EOS_SYMBOL ) return EOS_CONTRACT ;
+    auto _whitelist = whitelist_index_t(get_self(), sym.raw());
+    return name(_whitelist.get().contract);
 }
 
 void pomelo::publish_buyorder_if_needed(name account, asset bid, asset ask) {
@@ -313,42 +287,23 @@ void pomelo::sell(name account, asset bid, asset ask) {
     publish_sellorder_if_needed(account, bid, ask);
 }
 
-void pomelo::cancelbuy(name account, string str_symbol, uint64_t id) {
+template <typename T>
+void pomelo::cancelorder(name &account, string &str_symbol, const uint64_t &id) {
     require_auth(account);
 
-    buyorders_t buy_table(get_self(), symbol(str_symbol, 4).raw());    
-    auto itr = buy_table.find(id); 
-    
-    eosio_assert(itr != buy_table.end(), "Trade id is not found");
+    symbol sym(str_symbol, 4);
+    T _table(get_self(), sym.raw());  
+    auto itr = _table.require_find(id, "Trade id is not found");
     eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
 
     action(
         permission_level{get_self(), "active"_n},
-        TOKEN_CONTRACT, "transfer"_n,
-        make_tuple(get_self(), name(itr->account), itr->bid,
-            std::string("trade cancel successed"))
-    ).send();    
-
-    buy_table.erase(itr);
-}
-
-void pomelo::cancelsell(name account, string str_symbol, uint64_t id) {
-    require_auth(account);
-    
-    sellorders_t sell_table(get_self(), symbol(str_symbol, 4).raw());  
-    auto itr = sell_table.find(id);
-    
-    eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
-    eosio_assert(itr->id == id, "Trade id is not found");
-
-    action(
-        permission_level{get_self(), "active"_n},
-        get_contract_name_by_symbol(str_symbol), "transfer"_n,
+        get_contract_name_by_symbol(sym), "transfer"_n,
         make_tuple(get_self(), name(itr->account), itr->bid,
             std::string("trade cancel successed"))
     ).send();
     
-    sell_table.erase(itr);
+    _table.erase(itr);
 }
 
 void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid, asset ask)
@@ -401,7 +356,7 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
             t.ask.amount -= delta;
         });
     else
-        unit_price_index2.modify( unit_price_index2.end()--, get_self(), [&](auto &t) { // Modify sell order record
+        unit_price_index2.modify( --unit_price_index2.end(), get_self(), [&](auto &t) { // Modify sell order record
             t.bid.amount -= rdelta;
             t.ask.amount -= delta;
         });
@@ -433,7 +388,7 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
     }
     else {
         if (itr_b->ask.amount == 0 || itr_b->bid.amount == 0) {
-            unit_price_index2.erase(unit_price_index2.end()--);
+            unit_price_index2.erase(--unit_price_index2.end());
             if (bid.amount == 0 || ask.amount == 0)
                 return;
         }
@@ -442,15 +397,14 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
 
 void pomelo::setwhitelist(string str_symbol, name issuer) {
     require_auth(get_self());
-    whitelist w; w.contract = issuer.value;
-    whitelist_index_t whitelist(get_self(), symbol(str_symbol, 4).raw());
-    whitelist.set(w, get_self()); 
+    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).raw());
+    _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
 }
 
 void pomelo::rmwhitelist(string str_symbol) {
     require_auth(get_self());
-    whitelist_index_t whitelist(get_self(), symbol(str_symbol, 4).raw());
-    whitelist.remove();
+    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).raw());
+    _whitelist.remove();
 }
 
 void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
@@ -472,10 +426,6 @@ void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
         market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
 
     if (bid.symbol == EOS_SYMBOL) {
-        //eosio_assert(ask.symbol == S(4, "PXL"), "123");
-        //eosio_assert(ask.symbol == string_to_symbol(4, "PXL"), "123");
-        // note(minakokojima): S() and string_to_symbol is not equal?
-
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS");
         buy(from, bid, ask);
     }

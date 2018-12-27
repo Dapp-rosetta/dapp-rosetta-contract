@@ -9,9 +9,9 @@ using namespace std;
 
 typedef uint32_t time;
 
-const auto EOS_SYMBOL = eosio::symbol("EOS", 4);
-const auto EOS_CONTRACT = "eosio.token"_n;
-const auto TOKEN_CONTRACT = "eosio.token"_n;
+constexpr auto EOS_SYMBOL = eosio::symbol("EOS", 4);
+constexpr auto EOS_CONTRACT = "eosio.token"_n;
+constexpr auto TOKEN_CONTRACT = "eosio.token"_n;
 
 constexpr uint64_t PRICE_SCALE = 100000000;
 
@@ -35,8 +35,15 @@ public:
     ACTION addfav(string str_symbol) {}
     ACTION removefav(string str_symbol) {}
     ACTION clean(string str_symbol);
-    ACTION cancelsell(name account, string str_symbol, uint64_t id);
-    ACTION cancelbuy(name account, string str_symbol, uint64_t id);
+    ACTION cancelbuy(name account, string str_symbol, uint64_t id){
+        require_auth(account);
+        cancelorder<buyorders_t>(account, str_symbol, id);
+    }
+ 
+    ACTION cancelsell(name account, string str_symbol, uint64_t id){
+        require_auth(account);
+        cancelorder<sellorders_t>(account, str_symbol, id);
+    }
     ACTION setwhitelist(string str_symbol, name issuer);
     ACTION rmwhitelist(string str_symbol);
     ACTION login(string token) {}
@@ -121,12 +128,19 @@ private:
         return get_contract_name_by_symbol( symbol(str_symbol,4) );
     }
 
-    void assert_whitelist(symbol sym, name contract);
-    void assert_whitelist(string str_symbol, name contract);
+    template <typename T>
+    inline void assert_whitelist(T &sym, name contract) {
+        auto account = get_contract_name_by_symbol(sym);
+        eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
+    }
+    
     void publish_buyorder_if_needed(name account, asset bid, asset ask);
     void publish_sellorder_if_needed(name account, asset bid, asset ask);
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
+    
+    template <typename T>
+    void cancelorder(name &account, string &str_symbol, const uint64_t &id);
 
     inline void action_transfer_token(const name &token_contract, const name &to, const asset &quantity );
     void match_processing(const bool &isBuyorder, const name &token_contract, const match_record &m_rec);
@@ -156,7 +170,7 @@ void pomelo::apply(uint64_t receiver, uint64_t code, uint64_t action) {
         if (transfer_data.quantity.symbol == EOS_SYMBOL)
             eosio_assert(name(code) == TOKEN_CONTRACT, "Transfer EOS must go through eosio.token...");
         else
-            assert_whitelist(transfer_data.quantity.symbol, name(code));
+            assert_whitelist<symbol>(transfer_data.quantity.symbol, name(code));
         
         onTransfer(transfer_data.from, transfer_data.to, transfer_data.quantity, transfer_data.memo);
         return;
