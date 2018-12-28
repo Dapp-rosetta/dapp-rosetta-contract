@@ -2,7 +2,6 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/singleton.hpp>
-#include <cmath>
 
 using namespace eosio;
 using namespace std;
@@ -141,12 +140,10 @@ private:
         auto account = get_contract_name_by_symbol(sym);
         eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
     }
-    
-    void publish_buyorder_if_needed(name account, asset bid, asset ask);
-    void publish_sellorder_if_needed(name account, asset bid, asset ask);
+    template <typename T>
+    void publish_order(name account, asset bid, asset ask); 
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
-    
     template <typename T>
     void cancelorder(name &account, string &str_symbol, const uint64_t &id);
 

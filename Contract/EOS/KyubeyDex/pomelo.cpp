@@ -71,48 +71,31 @@ name pomelo::get_contract_name_by_symbol(symbol sym) {
     return name(_whitelist.get().contract);
 }
 
-void pomelo::publish_buyorder_if_needed(name account, asset bid, asset ask) {
+template <typename T>
+void pomelo::publish_order(name account, asset bid, asset ask) {
+    const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
     // Validate bid & ask symbol
-    eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS.");
-    eosio_assert(ask.is_valid(), "Ask must be valid");
-    eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS");
-
-    if (ask.amount > 0) {
-        buyorders_t buy_table(get_self(), ask.symbol.raw());
-        buy_table.emplace(get_self(), [&](auto& t) {
-            t.id = buy_table.available_primary_key();
-            t.account = account.value;
-            t.ask = ask;
-            t.bid = bid;
-            t.unit_price = bid.amount * PRICE_SCALE / ask.amount;
-            t.timestamp = current_time();
-
-            action(
-                permission_level{ get_self(), "active"_n },
-                get_self(), "buyreceipt"_n, t
-            ).send();      
-        });
+    if ( isBuyorder ) {
+        eosio_assert(ask.is_valid(), "Ask must be valid");
+        eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS");
     }
-}
-
-void pomelo::publish_sellorder_if_needed(name account, asset bid, asset ask) {
-    // Validate bid & ask symbol
-    eosio_assert(bid.symbol != EOS_SYMBOL, "Bid must be non-EOS");
-    eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS");
-
+    else {
+        eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS");
+    }
     if (ask.amount > 0) {
-        sellorders_t sell_table(get_self(), bid.symbol.raw());
-        sell_table.emplace(get_self(), [&](auto& t) {
-            t.id = sell_table.available_primary_key();
+        T _table( get_self(), isBuyorder ? ask.symbol.raw() : bid.symbol.raw());
+        _table.emplace(get_self(), [&](auto &t) {
+            t.id = _table.available_primary_key();
             t.account = account.value;
             t.ask = ask;
             t.bid = bid;
-            t.unit_price = ask.amount * PRICE_SCALE / bid.amount;
+            t.unit_price = isBuyorder ? (bid.amount * PRICE_SCALE / ask.amount) : (ask.amount * PRICE_SCALE / bid.amount);
             t.timestamp = current_time();
+
             action(
-                permission_level{ get_self(), "active"_n },
-                get_self(), "sellreceipt"_n, t
-           ).send();      
+                permission_level{get_self(), "active"_n},
+                get_self(), isBuyorder ? "buyreceipt"_n : "sellreceipt"_n, t)
+                .send();
         });
     }
 }
@@ -202,8 +185,7 @@ void pomelo::buy(name account, asset bid, asset ask) {
         else return;
     }
 
-    // The current order is not fully matched, publish the order
-    publish_buyorder_if_needed(account, bid, ask);
+    publish_order<buyorders_t>(account, bid, ask); // The current order is not fully matched, publish the order
 }
 
 void pomelo::sell(name account, asset bid, asset ask) {
@@ -272,8 +254,7 @@ void pomelo::sell(name account, asset bid, asset ask) {
         else return;
     }
 
-    // The current order is not fully matched, publish the order
-    publish_sellorder_if_needed(account, bid, ask);
+    publish_order<sellorders_t>(account, bid, ask); // The current order is not fully matched, publish the order
 }
 
 template <typename T>
