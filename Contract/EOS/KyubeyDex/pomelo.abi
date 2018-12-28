@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Mon Dec 24 17:57:32 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 27 13:56:48 2018",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -24,33 +24,8 @@
         },
         {
             "name": "buyorder",
-            "base": "",
-            "fields": [
-                {
-                    "name": "id",
-                    "type": "uint64"
-                },
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "bid",
-                    "type": "asset"
-                },
-                {
-                    "name": "ask",
-                    "type": "asset"
-                },
-                {
-                    "name": "unit_price",
-                    "type": "uint64"
-                },
-                {
-                    "name": "timestamp",
-                    "type": "time"
-                }
-            ]
+            "base": "st_order",
+            "fields": []
         },
         {
             "name": "buyreceipt",
@@ -184,6 +159,35 @@
         },
         {
             "name": "sellorder",
+            "base": "st_order",
+            "fields": []
+        },
+        {
+            "name": "sellreceipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "t",
+                    "type": "sellorder"
+                }
+            ]
+        },
+        {
+            "name": "setwhitelist",
+            "base": "",
+            "fields": [
+                {
+                    "name": "str_symbol",
+                    "type": "string"
+                },
+                {
+                    "name": "issuer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "st_order",
             "base": "",
             "fields": [
                 {
@@ -209,30 +213,6 @@
                 {
                     "name": "timestamp",
                     "type": "time"
-                }
-            ]
-        },
-        {
-            "name": "sellreceipt",
-            "base": "",
-            "fields": [
-                {
-                    "name": "t",
-                    "type": "sellorder"
-                }
-            ]
-        },
-        {
-            "name": "setwhitelist",
-            "base": "",
-            "fields": [
-                {
-                    "name": "str_symbol",
-                    "type": "string"
-                },
-                {
-                    "name": "issuer",
-                    "type": "name"
                 }
             ]
         },
