@@ -108,19 +108,19 @@ public:
     };
 
     // rec
-    ACTION buyreceipt(buyorder o) {
+    ACTION buyreceipt(buyorder buy_order) {
         require_auth(_self);
     }    
 
-    ACTION sellreceipt(sellorder t) {
+    ACTION sellreceipt(sellorder sell_order) {
         require_auth(_self);
     }   
 
-    ACTION buymatch(match_record t) {
+    ACTION buymatch(match_record record) {
         require_auth(_self);
     }
 
-    ACTION sellmatch(match_record t) {
+    ACTION sellmatch(match_record record) {
         require_auth(_self);
     }
 
