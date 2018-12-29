@@ -74,8 +74,7 @@ name pomelo::get_contract_name_by_symbol(symbol sym) {
 template <typename T>
 void pomelo::publish_order(name account, asset bid, asset ask) {
     const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
-    // Validate bid & ask symbol
-    if ( isBuyorder ) {
+    if ( isBuyorder ) { // Validate bid & ask symbol
         eosio_assert(ask.is_valid(), "Ask must be valid");
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS");
     }
@@ -87,8 +86,9 @@ void pomelo::publish_order(name account, asset bid, asset ask) {
         _table.emplace(get_self(), [&](auto &t) {
             t.id = _table.available_primary_key();
             t.account = account.value;
-            t.ask = ask;
             t.bid = bid;
+            t.ask = ask;
+            // EOS / XXX
             t.unit_price = isBuyorder ? (bid.amount * PRICE_SCALE / ask.amount) : (ask.amount * PRICE_SCALE / bid.amount);
             t.timestamp = current_time();
 
@@ -100,27 +100,25 @@ void pomelo::publish_order(name account, asset bid, asset ask) {
     }
 }
 
-void pomelo::action_transfer_token(const name &token_contract, const name &to, const asset &quantity )
+void pomelo::action_transfer_token(const name &to, const asset &quantity, const string memo )
 {
     action( // Transfer Token
         permission_level{get_self(), "active"_n},
-        token_contract, "transfer"_n,
-        make_tuple(get_self(), to, quantity, string("transfer")))
+        get_contract_name_by_symbol(quantity.symbol), "transfer"_n,
+        make_tuple(get_self(), to, quantity, memo))
         .send();
 }
 
-void pomelo::match_processing(const bool &isBuyorder, const name &token_contract, const match_record &m_rec)
+void pomelo::match_processing(const bool &isBuyorder, const match_record &m_rec)
 {
     action(
         permission_level{get_self(), "active"_n},
         get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), m_rec)
         .send();
 
-    action_transfer_token(EOS_CONTRACT,
-                          name(isBuyorder ? m_rec.asker : m_rec.bidder),
+    action_transfer_token(name(isBuyorder ? m_rec.asker : m_rec.bidder),
                           isBuyorder ? m_rec.bid : m_rec.ask);
-    action_transfer_token(token_contract,
-                          name(isBuyorder ? m_rec.bidder : m_rec.asker),
+    action_transfer_token(name(isBuyorder ? m_rec.bidder : m_rec.asker),
                           isBuyorder ? m_rec.ask : m_rec.bid);
 }
 
@@ -128,8 +126,9 @@ void pomelo::buy(name account, asset bid, asset ask) {
     eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS");                                    // Validate bid symbol
     eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");                             // Validate ask symbol
     eosio_assert(is_valid_unit_price(bid.amount, ask.amount), "Bid mod ask must be 0!!!"); // Validate unit price is integer
+    asset &bid_eos = bid ;
 
-    uint64_t order_unit_price = bid.amount * PRICE_SCALE / ask.amount; // Calculate unit price  
+    uint64_t order_unit_price = bid_eos.amount * PRICE_SCALE / ask.amount; // Calculate unit price  
             
     sellorders_t sell_table(get_self(), ask.symbol.raw()); // Retrive the sell table for current token
     auto unit_price_index = sell_table.get_index<"byprice"_n>(); // Get unit price index
@@ -146,7 +145,7 @@ void pomelo::buy(name account, asset bid, asset ask) {
             t.ask.amount -= sold_eos;
         });
         
-        bid.amount -= sold_eos;
+        bid_eos.amount -= sold_eos;
         ask.amount -= sold_eos * PRICE_SCALE / order_unit_price;        
         
         auto token_contract = get_contract_name_by_symbol(ask.symbol); // Retrive issue contract of this token
@@ -180,12 +179,12 @@ void pomelo::buy(name account, asset bid, asset ask) {
         // Erase the sell order from sell order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
             itr = unit_price_index.erase(itr);
-            if (bid.amount == 0 || ask.amount == 0) return;
+            if (bid_eos.amount == 0 || ask.amount == 0) return;
         }        
         else return;
     }
 
-    publish_order<buyorders_t>(account, bid, ask); // The current order is not fully matched, publish the order
+    publish_order<buyorders_t>(account, bid_eos, ask); // The current order is not fully matched, publish the order
 }
 
 void pomelo::sell(name account, asset bid, asset ask) {
@@ -278,91 +277,73 @@ void pomelo::cancelorder(name &account, string &str_symbol, const uint64_t &id) 
 
 void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid, asset ask)
 {
-    asset &a = isBuyorder ? bid : ask ;
-    asset &b = isBuyorder ? ask : bid ;
-
-    if ( isBuyorder ) { // Validate bid & ask symbol
-        eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS");            
+     if ( isBuyorder ) // Validate bid & ask symbol            
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");
-    } else {
-        eosio_assert(bid.symbol != EOS_SYMBOL, "Bid must be non-EOS");
-        eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");    
-    }
+    else 
+        eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");
 
-    uint64_t order_unit_price = a.amount * PRICE_SCALE / b.amount ;
-
-    auto unit_price_index = sellorders_t( get_self(), a.symbol.raw() ).get_index< "byprice"_n >();
-    auto unit_price_index2 = buyorders_t( get_self(), a.symbol.raw() ).get_index< "byprice"_n >();
+    auto unit_price_index = sellorders_t( get_self(), ask.symbol.raw() ).get_index< "byprice"_n >();
+    auto unit_price_index2 = buyorders_t( get_self(), bid.symbol.raw() ).get_index< "byprice"_n >();
     auto itr_a = unit_price_index.begin();
     auto itr_b = unit_price_index2.rbegin();
-    if ( isBuyorder ) {
+    
+    if ( isBuyorder ) { // refund for not found order
         if (itr_a == unit_price_index.end()) {
-            action( // Transfer Token
-                permission_level{get_self(), "active"_n},
-                EOS_CONTRACT, "transfer"_n,
-                make_tuple(get_self(), account, bid, string("refund")))
-                .send();
+            action_transfer_token( account, bid, string("refund") );
             return;
         }
     } else {
         if ( itr_b == unit_price_index2.rend() ) {
-            action( // Transfer Token
-                permission_level{get_self(), "active"_n},
-                get_contract_name_by_symbol(a.symbol), "transfer"_n,
-                make_tuple(get_self(), account, bid, string("refund")))
-                .send();
+            action_transfer_token( account, bid, string("refund") );
             return;
         }
     }
 
-    uint64_t sold_token = isBuyorder ? (ask.amount <= itr_a->bid.amount ? ask.amount : itr_a->bid.amount) :
-                                     (bid.amount <= itr_b->ask.amount ? bid.amount : itr_b->ask.amount);
-    uint64_t sold_eos = sold_token * (isBuyorder ? itr_a->unit_price : itr_b->unit_price ) / PRICE_SCALE;
+    // found
+    uint64_t order_unit_price = isBuyorder ? itr_a->unit_price : itr_b->unit_price ; // EOS / KBY
+    uint64_t max_amount_for_sell = bid.amount * PRICE_SCALE / order_unit_price ; 
+    uint64_t sold_token = isBuyorder ? (max_amount_for_sell <= itr_a->bid.amount ? max_amount_for_sell : itr_a->bid.amount) :
+                                       (max_amount_for_sell <= itr_b->ask.amount ? max_amount_for_sell : itr_b->ask.amount);    
+    uint64_t sold_eos = sold_token * order_unit_price / PRICE_SCALE;
     uint64_t &delta = isBuyorder ? sold_eos : sold_token;
     uint64_t &rdelta = isBuyorder ? sold_token : sold_eos;
-    if (isBuyorder)
-        unit_price_index.modify(itr_a, get_self(), [&](auto &t) { // Modify sell order record
-            t.bid.amount -= rdelta;
-            t.ask.amount -= delta;
-        });
+    auto lambda = [&](auto &t) {
+        t.bid.amount -= rdelta;
+        t.ask.amount -= delta;
+    };
+
+    if (isBuyorder) // Modify order record
+        unit_price_index.modify(itr_a, get_self(), lambda);
     else
-        unit_price_index2.modify( --unit_price_index2.end(), get_self(), [&](auto &t) { // Modify sell order record
-            t.bid.amount -= rdelta;
-            t.ask.amount -= delta;
-        });
+        unit_price_index2.modify( --unit_price_index2.end(), get_self(), lambda);
 
     bid.amount -= delta;
-    ask.amount -= delta * PRICE_SCALE / order_unit_price;
-
-    auto token_contract = get_contract_name_by_symbol(b.symbol); // Retrive issue contract of this token
+    
     auto rec_bid = isBuyorder ? asset(sold_eos, EOS_SYMBOL) : asset(sold_token, bid.symbol);
     auto rec_ask = isBuyorder ? asset(sold_token, ask.symbol) : asset(sold_eos, EOS_SYMBOL);
 
-    match_processing(isBuyorder, token_contract,
+    match_processing(isBuyorder,
                      match_record{
                          .id = isBuyorder ? itr_a->id : itr_b->id,
                          .bidder = isBuyorder ? account.value : itr_b->account,
                          .asker = isBuyorder ? itr_a->account : account.value,
                          .bid = rec_bid,
                          .ask = rec_ask,
-                         .unit_price = isBuyorder ? itr_a->unit_price : itr_b->unit_price,
+                         .unit_price = order_unit_price,
                          .timestamp = static_cast<time>(current_time()),
                      });
 
     if (isBuyorder) { // Erase the order from order table if the order has been took.
-        if (itr_a->ask.amount == 0 || itr_a->bid.amount == 0) {
+        if (itr_a->ask.amount == 0 || itr_a->bid.amount == 0)
             unit_price_index.erase(itr_a);
-            if (bid.amount == 0 || ask.amount == 0)
-                return;
-        }
     }
     else {
-        if (itr_b->ask.amount == 0 || itr_b->bid.amount == 0) {
+        if (itr_b->ask.amount == 0 || itr_b->bid.amount == 0)
             unit_price_index2.erase(--unit_price_index2.end());
-            if (bid.amount == 0 || ask.amount == 0)
-                return;
-        }
     }
+
+    if (bid.amount != 0)
+        market_price_trade( isBuyorder, account, bid, ask );
 }
 
 void pomelo::setwhitelist(string str_symbol, name issuer) {
@@ -383,7 +364,7 @@ void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
     if (to != get_self()) return;    
     require_auth(from);
     eosio_assert(bid.is_valid(), "invalid token transfer");
-    eosio_assert(bid.amount > 0, "must bet a positive amount");
+    eosio_assert(bid.amount > 0, "must be a positive amount");
 
     auto splited_asset = split(memo, ' ');
     eosio_assert( splited_asset.size() == 2, "Memo error");
@@ -392,7 +373,7 @@ void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
                symbol(splited_asset[1], 4)
              );
 
-    if (ask.amount == 0)
+    if ( ask.amount == 0 )
         market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
 
     if (bid.symbol == EOS_SYMBOL) {
