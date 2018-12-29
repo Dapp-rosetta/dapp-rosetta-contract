@@ -1,17 +1,17 @@
-Ch 1 分钱
-    1.1 A life of a penny
-    1.2 Ethereum 实现
-        1.2.1 Ethereum 区块链浏览器
-        1.2.2 Ethereum 账户系统
-        1.2.3 使用 Remix IDE 编写 Solidity 合约
-        1.2.4 Ethereum Gas 简介 
-    1.3 EOS 实现
-        1.3.1 EOS 区块链浏览器
-        1.3.2 EOS 账户系统
-        1.3.3 EOS 的消息分发机制
-        1.3.4 使用 eosio.cdt 编写 C++ 合约        
-        1.3.5 EOS 中的稀缺资源
-小结
+- Ch 1 分钱
+    - 1.1 A life of a penny
+    - 1.2 Ethereum 实现
+        - 1.2.1 Ethereum 区块链浏览器
+        - 1.2.2 Ethereum 账户系统
+        - 1.2.3 使用 Remix IDE 编写 Solidity 合约
+        - 1.2.4 Ethereum Gas 简介 
+    - 1.3 EOS 实现
+        - 1.3.1 EOS 区块链浏览器
+        - 1.3.2 EOS 账户系统
+        - 1.3.3 EOS 的消息分发机制
+        - 1.3.4 使用 eosio.cdt 编写 C++ 合约        
+        - 1.3.5 EOS 中的稀缺资源
+    - 章节注记
 
 * Ch 1 分钱
 智能合约，也叫智能合同，它是一段公开可验证的运行在区块链上的代码。
