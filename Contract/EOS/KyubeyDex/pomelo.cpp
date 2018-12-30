@@ -301,10 +301,13 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
 
     // found
     uint64_t order_unit_price = isBuyorder ? itr_a->unit_price : itr_b->unit_price ; // EOS / KBY
-    uint64_t max_amount_for_sell = bid.amount * PRICE_SCALE / order_unit_price ; 
+    eosio_assert(order_unit_price != 0, "No 0.");
+    uint64_t max_amount_for_sell = bid.amount * PRICE_SCALE / order_unit_price ;
+    eosio_assert(max_amount_for_sell != 0, "No 0.");
     uint64_t sold_token = isBuyorder ? (max_amount_for_sell <= itr_a->bid.amount ? max_amount_for_sell : itr_a->bid.amount) :
                                        (max_amount_for_sell <= itr_b->ask.amount ? max_amount_for_sell : itr_b->ask.amount);    
     uint64_t sold_eos = sold_token * order_unit_price / PRICE_SCALE;
+    eosio_assert(sold_eos != 0, "No 0.");
     uint64_t &delta = isBuyorder ? sold_eos : sold_token;
     uint64_t &rdelta = isBuyorder ? sold_token : sold_eos;
     auto lambda = [&](auto &t) {
@@ -333,14 +336,11 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
                          .timestamp = static_cast<time>(current_time()),
                      });
 
-    if (isBuyorder) { // Erase the order from order table if the order has been took.
-        if (itr_a->ask.amount == 0 || itr_a->bid.amount == 0)
-            unit_price_index.erase(itr_a);
-    }
-    else {
-        if (itr_b->ask.amount == 0 || itr_b->bid.amount == 0)
-            unit_price_index2.erase(--unit_price_index2.end());
-    }
+    // Erase the order from order table if the order has been took.
+    if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
+        unit_price_index.erase(itr_a);
+    if (itr_b->bid.amount == 0 || itr_b->ask.amount == 0)
+        unit_price_index2.erase(--unit_price_index2.end());
 
     if (bid.amount != 0)
         market_price_trade( isBuyorder, account, bid, ask );
@@ -373,16 +373,19 @@ void pomelo::onTransfer( name from, name to, asset bid, string memo ) {
                symbol(splited_asset[1], 4)
              );
 
-    if ( ask.amount == 0 )
+    if ( ask.amount == 0 ) {
         market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
-
+        return ;
+    }
     if (bid.symbol == EOS_SYMBOL) {
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS");
         buy(from, bid, ask);
+        return ;
     }
     else {
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS");
         sell(from, bid, ask);
+        return ;
     }
 }
 

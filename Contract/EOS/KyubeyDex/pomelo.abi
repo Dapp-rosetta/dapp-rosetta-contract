@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 27 13:56:48 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Sun Dec 30 18:25:44 2018",
     "version": "eosio::abi/1.1",
     "structs": [
         {
@@ -17,7 +17,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "t",
+                    "name": "record",
                     "type": "match_record"
                 }
             ]
@@ -32,7 +32,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "o",
+                    "name": "buy_order",
                     "type": "buyorder"
                 }
             ]
@@ -152,7 +152,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "t",
+                    "name": "record",
                     "type": "match_record"
                 }
             ]
@@ -167,7 +167,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "t",
+                    "name": "sell_order",
                     "type": "sellorder"
                 }
             ]
