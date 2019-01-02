@@ -67,7 +67,7 @@ vector<string> kyubeydex::split(string src, char c) {
 
 name kyubeydex::get_contract_name_by_symbol(symbol sym) {
     if ( sym == EOS_SYMBOL ) return EOS_CONTRACT ;
-    auto _whitelist = whitelist_index_t(get_self(), sym.raw());
+    auto _whitelist = whitelist_index_t(get_self(), sym.code().raw());
     return name(_whitelist.get().contract);
 }
 
@@ -330,19 +330,19 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
 
 void kyubeydex::setwhitelist(string str_symbol, name issuer) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).raw());
+    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
     _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
 }
 
 void kyubeydex::rmwhitelist(string str_symbol) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).raw());
+    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
     _whitelist.remove();
 }
 
 void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
-    // x.xxxx KBY price 0.0000000
-    // x.xxxx EOS price 0.0000000 
+    // x.xxxx KBY 
+    // x.xxxx EOS 
     if (to != get_self()) return;    
     require_auth(from);
     eosio_assert(bid.is_valid(), "invalid token transfer");
