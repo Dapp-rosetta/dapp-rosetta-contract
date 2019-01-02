@@ -82,7 +82,7 @@ void pomelo::publish_order(name account, asset bid, asset ask) {
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS");
     }
     if (ask.amount > 0) {
-        T _table( get_self(), isBuyorder ? ask.symbol.raw() : bid.symbol.raw());
+        T _table( get_self(), isBuyorder ? ask.symbol.code().raw() : bid.symbol.code().raw());
         _table.emplace(get_self(), [&](auto &t) {
             t.id = _table.available_primary_key();
             t.account = account.value;
@@ -130,7 +130,7 @@ void pomelo::buy(name account, asset bid, asset ask) {
 
     uint64_t order_unit_price = bid_eos.amount * PRICE_SCALE / ask.amount; // Calculate unit price  
             
-    sellorders_t sell_table(get_self(), ask.symbol.raw()); // Retrive the sell table for current token
+    sellorders_t sell_table(get_self(), ask.symbol.code().raw()); // Retrive the sell table for current token
     auto unit_price_index = sell_table.get_index<"byprice"_n>(); // Get unit price index
     
     for (auto itr = unit_price_index.begin(); itr != unit_price_index.end();){ // Visit sell orders table
@@ -196,7 +196,7 @@ void pomelo::sell(name account, asset bid, asset ask) {
     eosio_assert(is_valid_unit_price(ask.amount, bid.amount), "Ask mod bid must be 0");
 
     // Retrive the buy table for current token
-    buyorders_t buy_table(get_self(), bid.symbol.raw());
+    buyorders_t buy_table(get_self(), bid.symbol.code().raw());
     auto order_unit_price = ask.amount * PRICE_SCALE / bid.amount; // Calculate unit price
     auto unit_price_index = buy_table.get_index<"byprice"_n>(); // Get unit price index
     
@@ -282,8 +282,8 @@ void pomelo::market_price_trade(const bool &isBuyorder, name account, asset bid,
     else 
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");
 
-    auto unit_price_index = sellorders_t( get_self(), ask.symbol.raw() ).get_index< "byprice"_n >();
-    auto unit_price_index2 = buyorders_t( get_self(), bid.symbol.raw() ).get_index< "byprice"_n >();
+    auto unit_price_index = sellorders_t( get_self(), ask.symbol.code().raw() ).get_index< "byprice"_n >();
+    auto unit_price_index2 = buyorders_t( get_self(), bid.symbol.code().raw() ).get_index< "byprice"_n >();
     auto itr_a = unit_price_index.begin();
     auto itr_b = unit_price_index2.rbegin();
     
