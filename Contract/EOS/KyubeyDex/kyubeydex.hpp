@@ -15,7 +15,7 @@ constexpr auto EOS_CONTRACT = "eosio.token"_n;
 constexpr auto TOKEN_CONTRACT = "eosio.token"_n;
 
 constexpr uint64_t PRICE_SCALE = 100000000;
-
+/*
 static uint64_t my_string_to_symbol(const char* str) {
     uint32_t len = 0;
     while (str[len]) ++len;
@@ -40,7 +40,7 @@ static uint64_t my_string_to_symbol(uint8_t precision, const char* str) {
     result |= uint64_t(precision);
     return result >> 8;
 }
-
+*/
 CONTRACT kyubeydex : public eosio::contract {
 public:
     using contract::contract;
