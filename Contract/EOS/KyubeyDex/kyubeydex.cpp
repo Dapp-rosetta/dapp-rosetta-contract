@@ -243,7 +243,7 @@ void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &i
     require_auth(account);
 
     symbol sym(str_symbol, 4);
-    T _table(get_self(), sym.raw());  
+    T _table(get_self(), sym.code().raw());  
     auto itr = _table.require_find(id, "Trade id is not found");
     eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
 
