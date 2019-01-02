@@ -164,17 +164,8 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
             }
         ).send();
 
-        action( // Transfer EOS to seller
-            permission_level{ get_self(), "active"_n },
-            TOKEN_CONTRACT, "transfer"_n,
-            make_tuple(get_self(), itr->account, asset(sold_eos, EOS_SYMBOL), string("transfer")))
-        .send();
-    
-        action( // Transfer Token to buyer
-            permission_level{ get_self(), "active"_n },
-            token_contract, "transfer"_n,
-            make_tuple(get_self(), account, asset(sold_token, ask.symbol), string("transfer")))
-        .send();
+        action_transfer_token( name(itr->account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
+        action_transfer_token( name(account), asset(sold_token, ask.symbol) ); // Transfer Token to buyer
                 
         // Erase the sell order from sell order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
@@ -233,17 +224,8 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
             }
         ).send();
 
-        action( // Transfer EOS to seller
-            permission_level{ get_self(), "active"_n },
-            TOKEN_CONTRACT, "transfer"_n,
-            make_tuple(get_self(), name(account), asset(sold_eos, EOS_SYMBOL), string("transfer"))
-        ).send();
-    
-        action( // Transfer Token to buyer
-            permission_level{ get_self(), "active"_n },
-            token_contract, "transfer"_n,
-            make_tuple(get_self(), name(itr->account), asset(sold_token, bid.symbol), string("transfer"))
-        ).send();
+        action_transfer_token( name(account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
+        action_transfer_token( name(itr->account), asset(sold_token, bid.symbol) ); // Transfer Token to buyer
                 
         // Erase the buy order from buy order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
