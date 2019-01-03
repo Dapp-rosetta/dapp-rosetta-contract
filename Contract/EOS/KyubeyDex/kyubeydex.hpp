@@ -86,13 +86,12 @@ public:
         capi_name contract;
     };
 
-    typedef eosio::multi_index<"buyorder"_n, buyorder, 
-        indexed_by<"byprice"_n, const_mem_fun<buyorder, uint64_t, &buyorder::get_price>>
-    > buyorders_t;
-    
-    typedef eosio::multi_index<"sellorder"_n, sellorder, 
-        indexed_by<"byprice"_n, const_mem_fun<sellorder, uint64_t, &sellorder::get_price>>
-    > sellorders_t;
+    typedef eosio::multi_index< "buyorder"_n, buyorder, 
+                                indexed_by<"byprice"_n, const_mem_fun<buyorder, uint64_t, &buyorder::get_price> > 
+            > buyorders_t;
+    typedef eosio::multi_index< "sellorder"_n, sellorder, 
+                                indexed_by<"byprice"_n, const_mem_fun<sellorder, uint64_t, &sellorder::get_price> > 
+            > sellorders_t;
  
     typedef singleton<"whitelist"_n, whitelist> whitelist_index_t;
 

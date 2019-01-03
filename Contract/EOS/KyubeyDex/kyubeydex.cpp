@@ -264,23 +264,25 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     else 
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");
 
-    auto unit_price_index = sellorders_t( get_self(), ask.symbol.code().raw() ).get_index< "byprice"_n >();
-    auto unit_price_index2 = buyorders_t( get_self(), bid.symbol.code().raw() ).get_index< "byprice"_n >();
-    auto itr_a = unit_price_index.begin();
-    auto itr_b = unit_price_index2.rbegin();
+    sellorders_t sell_table(get_self(), ask.symbol.code().raw());
+    buyorders_t buy_table(get_self(), bid.symbol.code().raw());
+    auto unit_price_index_sell_table = sell_table.get_index<"byprice"_n>();
+    auto unit_price_index_buy_table = buy_table.get_index<"byprice"_n>();
+    auto itr_a = unit_price_index_sell_table.begin();
+    auto itr_b = unit_price_index_buy_table.rbegin();
     
     if ( isBuyorder ) { // refund for not found order
-        if (itr_a == unit_price_index.end()) {
+        if (itr_a == unit_price_index_sell_table.end()) {
             action_transfer_token( account, bid, string("refund") );
             return;
         }
     } else {
-        if ( itr_b == unit_price_index2.rend() ) {
+        if ( itr_b == unit_price_index_buy_table.rend() ) {
             action_transfer_token( account, bid, string("refund") );
             return;
         }
     }
-
+    
     // found
     uint64_t order_unit_price = isBuyorder ? itr_a->unit_price : itr_b->unit_price ; // EOS / KBY
     eosio_assert(order_unit_price != 0, "No 0.");
@@ -296,11 +298,11 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
         t.bid.amount -= rdelta;
         t.ask.amount -= delta;
     };
-
+    
     if (isBuyorder) // Modify order record
-        unit_price_index.modify(itr_a, get_self(), lambda);
+        unit_price_index_sell_table.modify(itr_a, get_self(), lambda);
     else
-        unit_price_index2.modify( --unit_price_index2.end(), get_self(), lambda);
+        unit_price_index_buy_table.modify( --unit_price_index_buy_table.end(), get_self(), lambda);
 
     bid.amount -= delta;
     
@@ -318,14 +320,16 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
                          .timestamp = static_cast<time>(current_time()),
                      });
 
-    // Erase the order from order table if the order has been took.
-    if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
-        unit_price_index.erase(itr_a);
-    if (itr_b->bid.amount == 0 || itr_b->ask.amount == 0)
-        unit_price_index2.erase(--unit_price_index2.end());
+    
+    if (isBuyorder) { // Erase the order from order table if the order has been took.
+        if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
+            unit_price_index_sell_table.erase(itr_a); 
+    } else {
+        if (itr_b->bid.amount == 0 || itr_b->ask.amount == 0)
+            unit_price_index_buy_table.erase(--unit_price_index_buy_table.end());
+    }
 
-    if (bid.amount != 0)
-        market_price_trade( isBuyorder, account, bid, ask );
+    if (bid.amount != 0) market_price_trade( isBuyorder, account, bid, ask ); // next run
 }
 
 void kyubeydex::setwhitelist(string str_symbol, name issuer) {
@@ -356,6 +360,7 @@ void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
              );
 
     if ( ask.amount == 0 ) {
+        // eosio_assert( false, "Testing");
         market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
         return ;
     }
