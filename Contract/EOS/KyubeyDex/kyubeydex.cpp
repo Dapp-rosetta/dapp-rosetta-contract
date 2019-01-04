@@ -269,7 +269,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     auto unit_price_index_sell_table = sell_table.get_index<"byprice"_n>();
     auto unit_price_index_buy_table = buy_table.get_index<"byprice"_n>();
     auto itr_a = unit_price_index_sell_table.begin();
-    auto itr_b = unit_price_index_buy_table.rbegin();
+    auto itr_b = unit_price_index_buy_table.begin();
     
     if ( isBuyorder ) { // refund for not found order
         if (itr_a == unit_price_index_sell_table.end()) {
@@ -277,7 +277,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
             return;
         }
     } else {
-        if ( itr_b == unit_price_index_buy_table.rend() ) {
+        if ( itr_b == unit_price_index_buy_table.end() ) {
             action_transfer_token( account, bid, string("refund") );
             return;
         }
@@ -302,7 +302,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     if (isBuyorder) // Modify order record
         unit_price_index_sell_table.modify(itr_a, get_self(), lambda);
     else
-        unit_price_index_buy_table.modify( --unit_price_index_buy_table.end(), get_self(), lambda);
+        unit_price_index_buy_table.modify( itr_b/*--unit_price_index_buy_table.end()*/, get_self(), lambda);
 
     bid.amount -= delta;
     
@@ -326,7 +326,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
             unit_price_index_sell_table.erase(itr_a); 
     } else {
         if (itr_b->bid.amount == 0 || itr_b->ask.amount == 0)
-            unit_price_index_buy_table.erase(--unit_price_index_buy_table.end());
+            unit_price_index_buy_table.erase(itr_b/*--unit_price_index_buy_table.end()*/);
     }
 
     if (bid.amount != 0) market_price_trade( isBuyorder, account, bid, ask ); // next run
