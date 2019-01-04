@@ -247,12 +247,7 @@ void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &i
     auto itr = _table.require_find(id, "Trade id is not found");
     eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
 
-    action(
-        permission_level{get_self(), "active"_n},
-        get_contract_name_by_symbol(sym), "transfer"_n,
-        make_tuple(get_self(), name(itr->account), itr->bid,
-            std::string("trade cancel successed"))
-    ).send();
+    action_transfer_token( name(itr->account), itr->bid, string("trade cancel successed") );
     
     _table.erase(itr);
 }
