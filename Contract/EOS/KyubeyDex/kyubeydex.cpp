@@ -16,7 +16,7 @@ void kyubeydex::clean(string str_symbol) {
     require_auth(get_self());
    
     buyorders_t t(get_self(), symbol(str_symbol, 4).code().raw());
-    while (t.begin() != t.end()) {    
+    while (t.begin() != t.end()) {
         auto itr = t.begin();
         action(
             permission_level{get_self(), "active"_n},
@@ -29,7 +29,7 @@ void kyubeydex::clean(string str_symbol) {
 
     sellorders_t t2(get_self(), symbol(str_symbol, 4).code().raw());
     while (t2.begin() != t2.end()) {    
-        auto itr = t2.begin();        
+        auto itr = t2.begin();
         action(
             permission_level{get_self(), "active"_n},
             get_contract_name_by_symbol(itr->bid.symbol), "transfer"_n,
@@ -285,8 +285,6 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
  **/
 template <typename T>
 void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &id) {
-    require_auth(account);
-
     symbol sym(str_symbol, 4);
     T _table(get_self(), sym.code().raw());  
     auto itr = _table.require_find(id, "Trade id is not found");

@@ -15,32 +15,7 @@ constexpr auto EOS_CONTRACT = "eosio.token"_n;
 constexpr auto TOKEN_CONTRACT = "eosio.token"_n;
 
 constexpr uint64_t PRICE_SCALE = 100000000;
-/*
-static uint64_t my_string_to_symbol(const char* str) {
-    uint32_t len = 0;
-    while (str[len]) ++len;
-    
-    uint64_t result = 0;
-    for (uint32_t i = 0; i < len; ++i) {
-        // All characters must be upper case alaphabets
-        //eosio_assert(str[i] >= 'A' && str[i] <= 'Z', "...invalid character in symbol name");
-        result |= (uint64_t(str[i]) << (8 * (i + 1)));
-    }
-    return result >> 8;
-}
 
-static uint64_t my_string_to_symbol(uint8_t precision, const char* str) {
-    uint32_t len = 0;
-    while (str[len]) ++len;
-
-    uint64_t result = 0;
-    for (uint32_t i = 0; i < len; ++i) {
-        result |= (uint64_t(str[i]) << (8 * (i + 1)));
-    }
-    result |= uint64_t(precision);
-    return result >> 8;
-}
-*/
 CONTRACT kyubeydex : public eosio::contract {
 public:
     using contract::contract;
@@ -212,3 +187,30 @@ extern "C" {
 }
 
 } /// namespace kyubey
+
+/*
+static uint64_t my_string_to_symbol(const char* str) {
+    uint32_t len = 0;
+    while (str[len]) ++len;
+    
+    uint64_t result = 0;
+    for (uint32_t i = 0; i < len; ++i) {
+        // All characters must be upper case alaphabets
+        //eosio_assert(str[i] >= 'A' && str[i] <= 'Z', "...invalid character in symbol name");
+        result |= (uint64_t(str[i]) << (8 * (i + 1)));
+    }
+    return result >> 8;
+}
+
+static uint64_t my_string_to_symbol(uint8_t precision, const char* str) {
+    uint32_t len = 0;
+    while (str[len]) ++len;
+
+    uint64_t result = 0;
+    for (uint32_t i = 0; i < len; ++i) {
+        result |= (uint64_t(str[i]) << (8 * (i + 1)));
+    }
+    result |= uint64_t(precision);
+    return result >> 8;
+}
+*/
