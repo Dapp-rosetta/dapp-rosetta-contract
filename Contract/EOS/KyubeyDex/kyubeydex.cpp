@@ -1,5 +1,6 @@
 /**
  *  @copyright
+ *  Rule1: Any scope is used for token locating, must be symbol.code().raw() .
  */
 
 #include "kyubeydex.hpp"
@@ -14,7 +15,7 @@ namespace kyubey {
 void kyubeydex::clean(string str_symbol) {
     require_auth(get_self());
    
-    buyorders_t t(get_self(), symbol(str_symbol, 4).raw());
+    buyorders_t t(get_self(), symbol(str_symbol, 4).code().raw());
     while (t.begin() != t.end()) {    
         auto itr = t.begin();
         action(
@@ -26,7 +27,7 @@ void kyubeydex::clean(string str_symbol) {
         t.erase(itr);
     }
 
-    sellorders_t t2(get_self(), symbol(str_symbol, 4).raw());
+    sellorders_t t2(get_self(), symbol(str_symbol, 4).code().raw());
     while (t2.begin() != t2.end()) {    
         auto itr = t2.begin();        
         action(
