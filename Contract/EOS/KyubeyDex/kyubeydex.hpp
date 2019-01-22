@@ -134,6 +134,12 @@ private:
         return get_contract_name_by_symbol( symbol(str_symbol,4) );
     }
 
+/**
+ * @brief Check if the currency corresponds to the correct contract
+ * 
+ * @param sym - currency
+ * @param contract - contract
+ **/
     template <typename T>
     inline void assert_whitelist(T &sym, name contract) {
         auto account = get_contract_name_by_symbol(sym);

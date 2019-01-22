@@ -65,12 +65,31 @@ vector<string> kyubeydex::split(string src, char c) {
   return z;
 }
 
+/**
+ * @brief Find the corresponding contract in the whitelist by currency
+ * 
+ * @param sym_symbol - currency
+ **/
 name kyubeydex::get_contract_name_by_symbol(symbol sym) {
     if ( sym == EOS_SYMBOL ) return EOS_CONTRACT ;
     auto _whitelist = whitelist_index_t(get_self(), sym.code().raw());
     return name(_whitelist.get().contract);
 }
 
+/**
+ * @brief If the buy operation does not match exactly, add the purchased demand to the table and print the log
+ * 
+ * @param account - buyer
+ * @param bid - Bid (EOS)
+ * @param ask - Other currencies required
+ **/
+/**
+ * @brief If the sell operation does not match exactly, add the Selling demand to the table and print the log
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask (EOS)
+ **/
 template <typename T>
 void kyubeydex::publish_order(name account, asset bid, asset ask) {
     const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
@@ -122,6 +141,15 @@ void kyubeydex::match_processing(const bool &isBuyorder, const match_record &m_r
                           isBuyorder ? m_rec.ask : m_rec.bid);
 }
 
+/**
+ * @brief In the sell form, the unit price is searched for from the low to the high and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - buyer
+ * @param bid - (EOS)
+ * @param ask - Other currencies required
+ * 
+ **/
 void kyubeydex::buy(name account, asset bid, asset ask) {
     eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS");                                    // Validate bid symbol
     eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");                             // Validate ask symbol
@@ -178,6 +206,15 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
     publish_order<buyorders_t>(account, bid_eos, ask); // The current order is not fully matched, publish the order
 }
 
+/**
+ * @brief In the buy form, the unit price is searched for from the high to the low and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask(EOS)
+ * 
+ **/
 void kyubeydex::sell(name account, asset bid, asset ask) {
     // Validate bid symbol
     // Validate ask symbol
@@ -238,6 +275,13 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
     publish_order<sellorders_t>(account, bid, ask); // The current order is not fully matched, publish the order
 }
 
+/**
+ * @brief Cancel an existing buy or sell order 
+ * 
+ * @param account - buyer
+ * @param str_symbol - Currency name
+ * @param id - Order id 
+ **/
 template <typename T>
 void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &id) {
     require_auth(account);
@@ -327,18 +371,37 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     if (bid.amount != 0) market_price_trade( isBuyorder, account, bid, ask ); // next run
 }
 
+/**
+ * @brief Set the whitelist of currencies
+ * 
+ * @param str_symbol - Currency name
+ * @param issuer - Currency contract address
+ **/
 void kyubeydex::setwhitelist(string str_symbol, name issuer) {
     require_auth(get_self());
     whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
     _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
 }
 
+/**
+ * @brief Remove currency from whitelist
+ * 
+ * @param str_symbol - Currency name
+ **/
 void kyubeydex::rmwhitelist(string str_symbol) {
     require_auth(get_self());
     whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
     _whitelist.remove();
 }
 
+/**
+ * @brief Determining the transfer type by memo
+ * 
+ * @param from - The originator of the transfer
+ * @param to - Transfer address
+ * @param bid - Transfer amount
+ * @param memo - Use of transfer
+ **/
 void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
     // x.xxxx KBY 
     // x.xxxx EOS 
