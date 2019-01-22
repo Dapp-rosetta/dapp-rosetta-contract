@@ -32,8 +32,8 @@ public:
         require_auth(account);
         cancelorder<sellorders_t>(account, str_symbol, id);
     }
-    ACTION setwhitelist(string str_symbol, name issuer);
-    ACTION rmwhitelist(string str_symbol);
+    ACTION setwhitelist(string str_symbol, uint8_t precision = 4, name issuer = EOS_CONTRACT );
+    ACTION rmwhitelist(string str_symbol, uint8_t precision = 4);
     ACTION login(string token) {}
 
     struct st_order {
