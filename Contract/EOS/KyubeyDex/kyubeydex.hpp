@@ -30,8 +30,11 @@ public:
         require_auth(executor);
         cancelorder<sellorders_t>(executor, symbol(str_symbol, 4), id);
     }
-    ACTION setwhitelist(string str_symbol, const uint8_t precision = 4, const name issuer = EOS_CONTRACT );
-    ACTION rmwhitelist(string str_symbol, const uint8_t precision = 4);
+
+    // whitelist management
+    ACTION setwhitelist( name issuer, asset token );
+    ACTION rmwhitelist( asset token );
+    
     ACTION login(string token) {}
     ACTION addfav( string str_symbol) {}
     ACTION removefav( string str_symbol) {}

@@ -378,9 +378,9 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
  * @param str_symbol - Currency name
  * @param issuer - Currency contract address
  **/
-void kyubeydex::setwhitelist(string str_symbol, const uint8_t precision, const name issuer) {
+void kyubeydex::setwhitelist( name issuer, asset token ) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, precision).code().raw());
+    whitelist_index_t _whitelist(get_self(), token.symbol.code().raw());
     _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
 }
 
@@ -389,9 +389,9 @@ void kyubeydex::setwhitelist(string str_symbol, const uint8_t precision, const n
  * 
  * @param str_symbol - Currency name
  **/
-void kyubeydex::rmwhitelist(string str_symbol, const uint8_t precision) {
+void kyubeydex::rmwhitelist( asset token ) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, precision).code().raw());
+    whitelist_index_t _whitelist(get_self(), token.symbol.code().raw());
     _whitelist.remove();
 }
 
