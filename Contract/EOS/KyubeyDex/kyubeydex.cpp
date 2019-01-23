@@ -83,8 +83,7 @@ name kyubeydex::get_contract_name_by_symbol (symbol sym) const {
  * @param account - buyer
  * @param bid - Bid (EOS)
  * @param ask - Other currencies required
- **/
-/**
+
  * @brief If the sell operation does not match exactly, add the Selling demand to the table and print the log
  * 
  * @param account - seller
@@ -289,10 +288,10 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
  * @param id - Order id 
  **/
 template <typename T>
-void kyubeydex::cancelorder( const name &account, const symbol &sym, const uint64_t &id) {
+void kyubeydex::cancelorder( const name &executor, const symbol &sym, const uint64_t &id) {
     T _table(get_self(), sym.code().raw());  
     auto itr = _table.require_find(id, "Trade id is not found");
-    eosio_assert(account == name(itr->account) || account == "kyubeydex.bp"_n, "Account does not match");
+    eosio_assert(executor == name(itr->account) || executor == "kyubeydex.bp"_n, "Account does not match");
 
     action_transfer_token( name(itr->account), itr->bid, string("trade cancel successed") );
     

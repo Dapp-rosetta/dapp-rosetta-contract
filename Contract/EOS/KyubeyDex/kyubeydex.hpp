@@ -21,14 +21,14 @@ public:
     using contract::contract;
 
     ACTION clean( const string str_symbol);
-    ACTION cancelbuy( const name account, string &str_symbol, const uint64_t id) {
-        require_auth(account);
-        cancelorder<buyorders_t>(account, symbol(str_symbol, 4), id);
+    ACTION cancelbuy( const name executor, string &str_symbol, const uint64_t id) {
+        require_auth(executor);
+        cancelorder<buyorders_t>(executor, symbol(str_symbol, 4), id);
     }
  
-    ACTION cancelsell( const name account, string &str_symbol, const uint64_t id) {
-        require_auth(account);
-        cancelorder<sellorders_t>(account, symbol(str_symbol, 4), id);
+    ACTION cancelsell( const name executor, string &str_symbol, const uint64_t id) {
+        require_auth(executor);
+        cancelorder<sellorders_t>(executor, symbol(str_symbol, 4), id);
     }
     ACTION setwhitelist(string str_symbol, const uint8_t precision = 4, const name issuer = EOS_CONTRACT );
     ACTION rmwhitelist(string str_symbol, const uint8_t precision = 4);
@@ -125,7 +125,7 @@ private:
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
     template <typename T>
-    void cancelorder( const name &account, const symbol &sym, const uint64_t &id);
+    void cancelorder( const name &executor, const symbol &sym, const uint64_t &id);
 
     inline void action_transfer_token(const name &to, const asset &quantity,
                                               const string memo = string("transfer") );
