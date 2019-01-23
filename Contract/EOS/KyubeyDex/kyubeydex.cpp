@@ -12,7 +12,7 @@ namespace kyubey {
  *
  * @param str_symbol - token's symbol
  */
-void kyubeydex::clean(string str_symbol) {
+void kyubeydex::clean( const string str_symbol) {
     require_auth(get_self());
    
     buyorders_t t(get_self(), symbol(str_symbol, 4).code().raw());
@@ -40,7 +40,7 @@ void kyubeydex::clean(string str_symbol) {
     }  
 }
 
-uint64_t kyubeydex::string_to_amount(string s) {
+uint64_t kyubeydex::string_to_amount( const string &s ) const {
     uint64_t z = 0;
     for (int i=0;i<s.size();++i) {
         if ('0' <= s[i] && s[i] <= '9') {
@@ -51,7 +51,7 @@ uint64_t kyubeydex::string_to_amount(string s) {
     return z;
 }
 
-vector<string> kyubeydex::split(string src, char c) {
+vector<string> kyubeydex::split( const string &src, const char c ) const {
     vector<string> z;
     string t;
     for (int i = 0; i < src.size(); ++i){
@@ -71,7 +71,7 @@ vector<string> kyubeydex::split(string src, char c) {
  * 
  * @param sym_symbol - currency
  **/
-name kyubeydex::get_contract_name_by_symbol(symbol sym) {
+name kyubeydex::get_contract_name_by_symbol (symbol sym) const {
     if ( sym == EOS_SYMBOL ) return EOS_CONTRACT ;
     auto _whitelist = whitelist_index_t(get_self(), sym.code().raw());
     return name(_whitelist.get().contract);
@@ -129,17 +129,20 @@ void kyubeydex::action_transfer_token(const name &to, const asset &quantity, con
         .send();
 }
 
-void kyubeydex::match_processing(const bool &isBuyorder, const match_record &m_rec)
+void kyubeydex::match_processing(const bool &isBuyorder, const match_record &rec)
 {
     action(
         permission_level{get_self(), "active"_n},
-        get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), m_rec)
+        get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), rec)
         .send();
 
-    action_transfer_token(name(isBuyorder ? m_rec.asker : m_rec.bidder),
-                          isBuyorder ? m_rec.bid : m_rec.ask);
-    action_transfer_token(name(isBuyorder ? m_rec.bidder : m_rec.asker),
-                          isBuyorder ? m_rec.ask : m_rec.bid);
+    const asset &eos = isBuyorder ? rec.bid : rec.ask ;
+    const asset &token = isBuyorder ? rec.ask : rec.bid ;
+    eosio_assert(eos.symbol == EOS_SYMBOL, "1st asset must be EOS @ match");
+    eosio_assert(token.symbol != EOS_SYMBOL, "2nd asset must be non-EOS @ match");
+
+    action_transfer_token(name(rec.asker), eos);
+    action_transfer_token(name(rec.bidder), token);
 }
 
 /**
@@ -157,8 +160,10 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
     eosio_assert(is_valid_unit_price(bid.amount, ask.amount), "Bid mod ask must be 0!!!"); // Validate unit price is integer
     asset &bid_eos = bid ;
 
+    // 100.0001 EOS / 10.001 IQ
+    // 1000001 / 10001
     uint64_t order_unit_price = bid_eos.amount * PRICE_SCALE / ask.amount; // Calculate unit price  
-            
+    
     sellorders_t sell_table(get_self(), ask.symbol.code().raw()); // Retrive the sell table for current token
     auto unit_price_index = sell_table.get_index<"byprice"_n>(); // Get unit price index
     
@@ -280,15 +285,14 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
  * @brief Cancel an existing buy or sell order 
  * 
  * @param account - buyer
- * @param str_symbol - Currency name
+ * @param sym - token symbol
  * @param id - Order id 
  **/
 template <typename T>
-void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &id) {
-    symbol sym(str_symbol, 4);
+void kyubeydex::cancelorder( const name &account, const symbol &sym, const uint64_t &id) {
     T _table(get_self(), sym.code().raw());  
     auto itr = _table.require_find(id, "Trade id is not found");
-    eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
+    eosio_assert(account == name(itr->account) || account == "kyubeydex.bp"_n, "Account does not match");
 
     action_transfer_token( name(itr->account), itr->bid, string("trade cancel successed") );
     
@@ -358,7 +362,6 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
                          .timestamp = static_cast<time>(current_time()),
                      });
 
-    
     if (isBuyorder) { // Erase the order from order table if the order has been took.
         if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
             unit_price_index_sell_table.erase(itr_a); 
@@ -376,7 +379,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
  * @param str_symbol - Currency name
  * @param issuer - Currency contract address
  **/
-void kyubeydex::setwhitelist(string str_symbol, uint8_t precision, name issuer) {
+void kyubeydex::setwhitelist(string str_symbol, const uint8_t precision, const name issuer) {
     require_auth(get_self());
     whitelist_index_t _whitelist(get_self(), symbol(str_symbol, precision).code().raw());
     _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
@@ -387,7 +390,7 @@ void kyubeydex::setwhitelist(string str_symbol, uint8_t precision, name issuer) 
  * 
  * @param str_symbol - Currency name
  **/
-void kyubeydex::rmwhitelist(string str_symbol, uint8_t precision) {
+void kyubeydex::rmwhitelist(string str_symbol, const uint8_t precision) {
     require_auth(get_self());
     whitelist_index_t _whitelist(get_self(), symbol(str_symbol, precision).code().raw());
     _whitelist.remove();

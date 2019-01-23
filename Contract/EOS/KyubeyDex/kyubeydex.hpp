@@ -20,21 +20,21 @@ CONTRACT kyubeydex : public eosio::contract {
 public:
     using contract::contract;
 
-    ACTION addfav(string str_symbol) {}
-    ACTION removefav(string str_symbol) {}
-    ACTION clean(string str_symbol);
-    ACTION cancelbuy(name account, string str_symbol, uint64_t id){
+    ACTION clean( const string str_symbol);
+    ACTION cancelbuy( const name account, string &str_symbol, const uint64_t id) {
         require_auth(account);
-        cancelorder<buyorders_t>(account, str_symbol, id);
+        cancelorder<buyorders_t>(account, symbol(str_symbol, 4), id);
     }
  
-    ACTION cancelsell(name account, string str_symbol, uint64_t id){
+    ACTION cancelsell( const name account, string &str_symbol, const uint64_t id) {
         require_auth(account);
-        cancelorder<sellorders_t>(account, str_symbol, id);
+        cancelorder<sellorders_t>(account, symbol(str_symbol, 4), id);
     }
-    ACTION setwhitelist(string str_symbol, uint8_t precision = 4, name issuer = EOS_CONTRACT );
-    ACTION rmwhitelist(string str_symbol, uint8_t precision = 4);
+    ACTION setwhitelist(string str_symbol, const uint8_t precision = 4, const name issuer = EOS_CONTRACT );
+    ACTION rmwhitelist(string str_symbol, const uint8_t precision = 4);
     ACTION login(string token) {}
+    ACTION addfav( string str_symbol) {}
+    ACTION removefav( string str_symbol) {}
 
     struct st_order {
         uint64_t id;
@@ -81,19 +81,19 @@ public:
     };
 
     // rec
-    ACTION buyreceipt(buyorder buy_order) {
+    ACTION buyreceipt( const buyorder &buy_order) const {
         require_auth(_self);
     }    
 
-    ACTION sellreceipt(sellorder sell_order) {
+    ACTION sellreceipt( const sellorder &sell_order) const {
         require_auth(_self);
     }   
 
-    ACTION buymatch(match_record record) {
+    ACTION buymatch( const match_record &record) const {
         require_auth(_self);
     }
 
-    ACTION sellmatch(match_record record) {
+    ACTION sellmatch( const match_record &record) const {
         require_auth(_self);
     }
 
@@ -101,11 +101,11 @@ public:
     void transfer(name from, name to, asset quantity, string memo) {}
 
 private:
-    vector<string> split(string src, char c);
-    uint64_t string_to_amount(string s);
+    vector<string> split( const string &src, const char c ) const ;
+    uint64_t string_to_amount( const string &s ) const ;
 
-    name get_contract_name_by_symbol(symbol sym);
-    inline name get_contract_name_by_symbol(string str_symbol) {
+    name get_contract_name_by_symbol (symbol sym) const ;
+    inline name get_contract_name_by_symbol( const string str_symbol) const {
         return get_contract_name_by_symbol( symbol(str_symbol,4) );
     }
 
@@ -125,11 +125,11 @@ private:
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
     template <typename T>
-    void cancelorder(name &account, string &str_symbol, const uint64_t &id);
+    void cancelorder( const name &account, const symbol &sym, const uint64_t &id);
 
     inline void action_transfer_token(const name &to, const asset &quantity,
                                               const string memo = string("transfer") );
-    void match_processing(const bool &isBuyorder, const match_record &m_rec);
+    void match_processing(const bool &isBuyorder, const match_record &rec);
     void market_price_trade( const bool &isBuyorder, name account, asset bid, asset ask );
 
     inline bool is_valid_unit_price(uint64_t eos, uint64_t non_eos) {
