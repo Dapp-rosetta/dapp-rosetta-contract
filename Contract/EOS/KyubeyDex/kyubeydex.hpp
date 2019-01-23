@@ -34,7 +34,7 @@ public:
     // whitelist management
     ACTION setwhitelist( name issuer, asset token );
     ACTION rmwhitelist( asset token );
-    
+
     ACTION login(string token) {}
     ACTION addfav( string str_symbol) {}
     ACTION removefav( string str_symbol) {}
@@ -100,12 +100,14 @@ public:
         require_auth(_self);
     }
 
-    void onTransfer( name from, name to, asset bid, string memo );
+
     void transfer(name from, name to, asset quantity, string memo) {}
 
 private:
     vector<string> split( const string &src, const char c ) const ;
     uint64_t string_to_amount( const string &s ) const ;
+    asset string_to_asset( const string &s1, const string &s2 ) const ;
+    void onTransfer( name from, name to, asset bid, string memo );
 
     name get_contract_name_by_symbol (symbol sym) const ;
     inline name get_contract_name_by_symbol( const string str_symbol) const {

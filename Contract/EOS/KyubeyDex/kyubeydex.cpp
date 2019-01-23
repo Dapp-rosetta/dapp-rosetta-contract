@@ -51,6 +51,19 @@ uint64_t kyubeydex::string_to_amount( const string &s ) const {
     return z;
 }
 
+asset kyubeydex::string_to_asset( const string &s1, const string &s2 ) const {
+    int64_t a = 0;
+    uint8_t p = 0;
+    for (int i=0;i<s1.size();++i) { // 01.3456
+        if ( s1[i] == '.' ) p = s1.size() - (i + 1); 
+        if ('0' <= s1[i] && s1[i] <= '9') {
+            a *= 10; 
+            a += s1[i] - '0';
+        }
+    }
+    return asset{a, symbol{s2, p}};
+}
+
 vector<string> kyubeydex::split( const string &src, const char c ) const {
     vector<string> z;
     string t;
@@ -412,11 +425,8 @@ void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
     eosio_assert(bid.amount > 0, "must be a positive amount");
 
     auto splited_asset = split(memo, ' ');
-    eosio_assert( splited_asset.size() == 2, "Memo error");
-
-    asset ask( string_to_amount(splited_asset[0]),
-               symbol(splited_asset[1], 4)
-             );
+    eosio_assert(splited_asset.size() == 2, "Memo error");
+    asset ask = string_to_asset(splited_asset[0], splited_asset[1]);
 
     if ( ask.amount == 0 ) {
         // eosio_assert( false, "Testing");
