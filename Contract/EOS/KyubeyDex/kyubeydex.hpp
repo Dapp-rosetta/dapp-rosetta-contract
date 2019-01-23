@@ -23,12 +23,12 @@ public:
     ACTION clean( const string str_symbol);
     ACTION cancelbuy( const name executor, string &str_symbol, const uint64_t id) {
         require_auth(executor);
-        cancelorder<buyorders_t>(executor, symbol(str_symbol, 4), id);
+        cancelorder<buyorders_t>(executor, symbol_code{str_symbol}, id);
     }
  
     ACTION cancelsell( const name executor, string &str_symbol, const uint64_t id) {
         require_auth(executor);
-        cancelorder<sellorders_t>(executor, symbol(str_symbol, 4), id);
+        cancelorder<sellorders_t>(executor, symbol_code{str_symbol}, id);
     }
 
     // whitelist management
@@ -133,7 +133,7 @@ private:
     template <typename T>
     void publish_order(name account, asset bid, asset ask);
     template <typename T>
-    void cancelorder( const name &executor, const symbol &sym, const uint64_t &id);
+    void cancelorder( const name &executor, const symbol_code &code, const uint64_t &id);
 
     void market_price_trade(name account, asset bid, asset ask);
 

@@ -284,8 +284,8 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
  * @param id - Order id 
  **/
 template <typename T>
-void kyubeydex::cancelorder( const name &executor, const symbol &sym, const uint64_t &id) {
-    T _table(get_self(), sym.code().raw());  
+void kyubeydex::cancelorder( const name &executor, const symbol_code &code, const uint64_t &id) {
+    T _table(get_self(), code.raw());
     auto itr = _table.require_find(id, "Trade id is not found");
     eosio_assert(executor == name(itr->account) || executor == "kyubeydex.bp"_n, "Account does not match");
 
