@@ -141,8 +141,10 @@ void kyubeydex::action_transfer_token(const name &to, const asset &quantity, con
         .send();
 }
 
-void kyubeydex::match_processing(const bool &isBuyorder, const match_record &rec)
+void kyubeydex::match_processing(const match_record &rec)
 {
+    const bool isBuyorder = rec.bid.symbol == EOS_SYMBOL ;
+
     action(
         permission_level{get_self(), "active"_n},
         get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), rec)
@@ -192,27 +194,18 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
         });
         
         bid_eos.amount -= sold_eos;
-        ask.amount -= sold_eos * PRICE_SCALE / order_unit_price;        
-        
-        auto token_contract = get_contract_name_by_symbol(ask.symbol); // Retrive issue contract of this token
+        ask.amount -= sold_eos * PRICE_SCALE / order_unit_price;
 
-        action(
-            permission_level{get_self(), "active"_n},
-            get_self(), "buymatch"_n,
-            match_record{
-                .id = itr->id,
-                .bidder = account.value,
-                .asker = itr->account,
-                .bid = asset(sold_eos, EOS_SYMBOL),
-                .ask = asset(sold_token, ask.symbol),
-                .unit_price = itr->unit_price,
-                .timestamp = static_cast<time>(current_time()),
-            }
-        ).send();
-
-        action_transfer_token( name(itr->account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
-        action_transfer_token( name(account), asset(sold_token, ask.symbol) ); // Transfer Token to buyer
-                
+        match_processing(match_record{
+            .id = itr->id,
+            .bidder = account.value,
+            .asker = itr->account,
+            .bid = asset(sold_eos, EOS_SYMBOL),
+            .ask = asset(sold_token, ask.symbol),
+            .unit_price = itr->unit_price,
+            .timestamp = static_cast<time>(current_time()),
+        });
+         
         // Erase the sell order from sell order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
             itr = unit_price_index.erase(itr);
@@ -261,27 +254,17 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
 
         bid.amount -= sold_token;
         ask.amount -= sold_token * order_unit_price / PRICE_SCALE;
+
+        match_processing(match_record{
+            .id = itr->id,
+            .bidder = itr->account,
+            .asker = account.value,
+            .bid = asset(sold_token, bid.symbol),
+            .ask = asset(sold_eos, EOS_SYMBOL),
+            .unit_price = itr->unit_price,
+            .timestamp = static_cast<time>(current_time()),
+        });
         
-        // Retrive issue contract of this token
-        auto token_contract = get_contract_name_by_symbol(bid.symbol);
-
-        action(
-            permission_level{get_self(), "active"_n},
-            get_self(), "sellmatch"_n,
-            match_record {
-                .id = itr->id,
-                .bidder = itr->account,
-                .asker = account.value,
-                .bid = asset(sold_token, bid.symbol),
-                .ask = asset(sold_eos, EOS_SYMBOL),
-                .unit_price = itr->unit_price,
-                .timestamp = static_cast<time>(current_time()),
-            }
-        ).send();
-
-        action_transfer_token( name(account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
-        action_transfer_token( name(itr->account), asset(sold_token, bid.symbol) ); // Transfer Token to buyer
-                
         // Erase the buy order from buy order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
             itr = unit_price_index.erase(itr);
@@ -311,9 +294,10 @@ void kyubeydex::cancelorder( const name &executor, const symbol &sym, const uint
     _table.erase(itr);
 }
 
-void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset bid, asset ask)
+void kyubeydex::market_price_trade(name account, asset bid, asset ask)
 {
-     if ( isBuyorder ) // Validate bid & ask symbol            
+    const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
+    if ( isBuyorder ) // Validate bid & ask symbol            
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");
     else 
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");
@@ -363,8 +347,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     auto rec_bid = isBuyorder ? asset(sold_eos, EOS_SYMBOL) : asset(sold_token, bid.symbol);
     auto rec_ask = isBuyorder ? asset(sold_token, ask.symbol) : asset(sold_eos, EOS_SYMBOL);
 
-    match_processing(isBuyorder,
-                     match_record{
+    match_processing(match_record{
                          .id = isBuyorder ? itr_a->id : itr_b->id,
                          .bidder = isBuyorder ? account.value : itr_b->account,
                          .asker = isBuyorder ? itr_a->account : account.value,
@@ -382,7 +365,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
             unit_price_index_buy_table.erase(itr_b/*--unit_price_index_buy_table.end()*/);
     }
 
-    if (bid.amount != 0) market_price_trade( isBuyorder, account, bid, ask ); // next run
+    if (bid.amount != 0) market_price_trade(account, bid, ask); // next run
 }
 
 /**
@@ -417,8 +400,8 @@ void kyubeydex::rmwhitelist( asset token ) {
  * @param memo - Use of transfer
  **/
 void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
-    // x.xxxx KBY 
-    // x.xxxx EOS 
+    // x.xxxx EOS
+    // x.xxxx KBY
     if (to != get_self()) return;    
     require_auth(from);
     eosio_assert(bid.is_valid(), "invalid token transfer");
@@ -430,7 +413,7 @@ void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
 
     if ( ask.amount == 0 ) {
         // eosio_assert( false, "Testing");
-        market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
+        market_price_trade(from, bid, ask);
         return ;
     }
     if (bid.symbol == EOS_SYMBOL) {

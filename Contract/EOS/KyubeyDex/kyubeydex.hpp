@@ -100,7 +100,6 @@ public:
         require_auth(_self);
     }
 
-
     void transfer(name from, name to, asset quantity, string memo) {}
 
 private:
@@ -125,17 +124,18 @@ private:
         auto account = get_contract_name_by_symbol(sym);
         eosio_assert(account == contract, "Transfer code does not match the contract in whitelist.");
     }
-    template <typename T>
-    void publish_order(name account, asset bid, asset ask); 
+    inline void action_transfer_token(const name &to, const asset &quantity,
+                                              const string memo = string("transfer") );
+
     void buy(name account, asset bid, asset ask);
     void sell(name account, asset bid, asset ask);
+    void match_processing(const match_record &rec);
+    template <typename T>
+    void publish_order(name account, asset bid, asset ask);
     template <typename T>
     void cancelorder( const name &executor, const symbol &sym, const uint64_t &id);
 
-    inline void action_transfer_token(const name &to, const asset &quantity,
-                                              const string memo = string("transfer") );
-    void match_processing(const bool &isBuyorder, const match_record &rec);
-    void market_price_trade( const bool &isBuyorder, name account, asset bid, asset ask );
+    void market_price_trade(name account, asset bid, asset ask);
 
     inline bool is_valid_unit_price(uint64_t eos, uint64_t non_eos) {
         return eos * PRICE_SCALE % non_eos == 0;
