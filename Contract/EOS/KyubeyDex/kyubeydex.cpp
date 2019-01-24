@@ -1,5 +1,6 @@
 /**
  *  @copyright
+ *  Rule1: Any scope is used for token locating, must be symbol.code().raw() .
  */
 
 #include "kyubeydex.hpp"
@@ -11,11 +12,11 @@ namespace kyubey {
  *
  * @param str_symbol - token's symbol
  */
-void kyubeydex::clean(string str_symbol) {
+void kyubeydex::clean( const string str_symbol) {
     require_auth(get_self());
-   
-    buyorders_t t(get_self(), symbol(str_symbol, 4).raw());
-    while (t.begin() != t.end()) {    
+    eosio::symbol_code code( str_symbol );
+    buyorders_t t(get_self(), code.raw());
+    while (t.begin() != t.end()) {
         auto itr = t.begin();
         action(
             permission_level{get_self(), "active"_n},
@@ -26,9 +27,9 @@ void kyubeydex::clean(string str_symbol) {
         t.erase(itr);
     }
 
-    sellorders_t t2(get_self(), symbol(str_symbol, 4).raw());
+    sellorders_t t2(get_self(), code.raw());
     while (t2.begin() != t2.end()) {    
-        auto itr = t2.begin();        
+        auto itr = t2.begin();
         action(
             permission_level{get_self(), "active"_n},
             get_contract_name_by_symbol(itr->bid.symbol), "transfer"_n,
@@ -39,7 +40,7 @@ void kyubeydex::clean(string str_symbol) {
     }  
 }
 
-uint64_t kyubeydex::string_to_amount(string s) {
+uint64_t kyubeydex::string_to_amount( const string &s ) const {
     uint64_t z = 0;
     for (int i=0;i<s.size();++i) {
         if ('0' <= s[i] && s[i] <= '9') {
@@ -50,7 +51,20 @@ uint64_t kyubeydex::string_to_amount(string s) {
     return z;
 }
 
-vector<string> kyubeydex::split(string src, char c) {
+asset kyubeydex::string_to_asset( const string &s1, const string &s2 ) const {
+    int64_t a = 0;
+    uint8_t p = 0;
+    for (int i=0;i<s1.size();++i) { // 01.3456
+        if ( s1[i] == '.' ) p = s1.size() - (i + 1); 
+        if ('0' <= s1[i] && s1[i] <= '9') {
+            a *= 10; 
+            a += s1[i] - '0';
+        }
+    }
+    return asset{a, symbol{s2, p}};
+}
+
+vector<string> kyubeydex::split( const string &src, const char c ) const {
     vector<string> z;
     string t;
     for (int i = 0; i < src.size(); ++i){
@@ -65,12 +79,30 @@ vector<string> kyubeydex::split(string src, char c) {
   return z;
 }
 
-name kyubeydex::get_contract_name_by_symbol(symbol sym) {
+/**
+ * @brief Find the corresponding contract in the whitelist by currency
+ * 
+ * @param sym_symbol - currency
+ **/
+name kyubeydex::get_contract_name_by_symbol (symbol sym) const {
     if ( sym == EOS_SYMBOL ) return EOS_CONTRACT ;
     auto _whitelist = whitelist_index_t(get_self(), sym.code().raw());
     return name(_whitelist.get().contract);
 }
 
+/**
+ * @brief If the buy operation does not match exactly, add the purchased demand to the table and print the log
+ * 
+ * @param account - buyer
+ * @param bid - Bid (EOS)
+ * @param ask - Other currencies required
+
+ * @brief If the sell operation does not match exactly, add the Selling demand to the table and print the log
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask (EOS)
+ **/
 template <typename T>
 void kyubeydex::publish_order(name account, asset bid, asset ask) {
     const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
@@ -109,27 +141,43 @@ void kyubeydex::action_transfer_token(const name &to, const asset &quantity, con
         .send();
 }
 
-void kyubeydex::match_processing(const bool &isBuyorder, const match_record &m_rec)
+void kyubeydex::match_processing(const match_record &rec)
 {
+    const bool isBuyorder = rec.bid.symbol == EOS_SYMBOL ;
+
     action(
         permission_level{get_self(), "active"_n},
-        get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), m_rec)
+        get_self(), (isBuyorder ? "buymatch"_n : "sellmatch"_n), rec)
         .send();
 
-    action_transfer_token(name(isBuyorder ? m_rec.asker : m_rec.bidder),
-                          isBuyorder ? m_rec.bid : m_rec.ask);
-    action_transfer_token(name(isBuyorder ? m_rec.bidder : m_rec.asker),
-                          isBuyorder ? m_rec.ask : m_rec.bid);
+    const asset &eos = isBuyorder ? rec.bid : rec.ask ;
+    const asset &token = isBuyorder ? rec.ask : rec.bid ;
+    eosio_assert(eos.symbol == EOS_SYMBOL, "1st asset must be EOS @ match");
+    eosio_assert(token.symbol != EOS_SYMBOL, "2nd asset must be non-EOS @ match");
+
+    action_transfer_token(name(rec.asker), eos);
+    action_transfer_token(name(rec.bidder), token);
 }
 
+/**
+ * @brief In the sell form, the unit price is searched for from the low to the high and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - buyer
+ * @param bid - (EOS)
+ * @param ask - Other currencies required
+ * 
+ **/
 void kyubeydex::buy(name account, asset bid, asset ask) {
     eosio_assert(bid.symbol == EOS_SYMBOL, "Bid must be EOS");                                    // Validate bid symbol
     eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");                             // Validate ask symbol
     eosio_assert(is_valid_unit_price(bid.amount, ask.amount), "Bid mod ask must be 0!!!"); // Validate unit price is integer
     asset &bid_eos = bid ;
 
+    // 100.0001 EOS / 10.001 IQ
+    // 1000001 / 10001
     uint64_t order_unit_price = bid_eos.amount * PRICE_SCALE / ask.amount; // Calculate unit price  
-            
+    
     sellorders_t sell_table(get_self(), ask.symbol.code().raw()); // Retrive the sell table for current token
     auto unit_price_index = sell_table.get_index<"byprice"_n>(); // Get unit price index
     
@@ -146,27 +194,18 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
         });
         
         bid_eos.amount -= sold_eos;
-        ask.amount -= sold_eos * PRICE_SCALE / order_unit_price;        
-        
-        auto token_contract = get_contract_name_by_symbol(ask.symbol); // Retrive issue contract of this token
+        ask.amount -= sold_eos * PRICE_SCALE / order_unit_price;
 
-        action(
-            permission_level{get_self(), "active"_n},
-            get_self(), "buymatch"_n,
-            match_record{
-                .id = itr->id,
-                .bidder = account.value,
-                .asker = itr->account,
-                .bid = asset(sold_eos, EOS_SYMBOL),
-                .ask = asset(sold_token, ask.symbol),
-                .unit_price = itr->unit_price,
-                .timestamp = static_cast<time>(current_time()),
-            }
-        ).send();
-
-        action_transfer_token( name(itr->account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
-        action_transfer_token( name(account), asset(sold_token, ask.symbol) ); // Transfer Token to buyer
-                
+        match_processing(match_record{
+            .id = itr->id,
+            .bidder = account.value,
+            .asker = itr->account,
+            .bid = asset(sold_eos, EOS_SYMBOL),
+            .ask = asset(sold_token, ask.symbol),
+            .unit_price = itr->unit_price,
+            .timestamp = static_cast<time>(current_time()),
+        });
+         
         // Erase the sell order from sell order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
             itr = unit_price_index.erase(itr);
@@ -178,6 +217,15 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
     publish_order<buyorders_t>(account, bid_eos, ask); // The current order is not fully matched, publish the order
 }
 
+/**
+ * @brief In the buy form, the unit price is searched for from the high to the low and then
+ *        print the completed transaction as a log. Finally, publish the transaction without an exact match.
+ * 
+ * @param account - seller
+ * @param bid - Other currencies required
+ * @param ask - ask(EOS)
+ * 
+ **/
 void kyubeydex::sell(name account, asset bid, asset ask) {
     // Validate bid symbol
     // Validate ask symbol
@@ -206,27 +254,17 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
 
         bid.amount -= sold_token;
         ask.amount -= sold_token * order_unit_price / PRICE_SCALE;
+
+        match_processing(match_record{
+            .id = itr->id,
+            .bidder = itr->account,
+            .asker = account.value,
+            .bid = asset(sold_token, bid.symbol),
+            .ask = asset(sold_eos, EOS_SYMBOL),
+            .unit_price = itr->unit_price,
+            .timestamp = static_cast<time>(current_time()),
+        });
         
-        // Retrive issue contract of this token
-        auto token_contract = get_contract_name_by_symbol(bid.symbol);
-
-        action(
-            permission_level{get_self(), "active"_n},
-            get_self(), "sellmatch"_n,
-            match_record {
-                .id = itr->id,
-                .bidder = itr->account,
-                .asker = account.value,
-                .bid = asset(sold_token, bid.symbol),
-                .ask = asset(sold_eos, EOS_SYMBOL),
-                .unit_price = itr->unit_price,
-                .timestamp = static_cast<time>(current_time()),
-            }
-        ).send();
-
-        action_transfer_token( name(account), asset(sold_eos, EOS_SYMBOL) ); // Transfer EOS to seller
-        action_transfer_token( name(itr->account), asset(sold_token, bid.symbol) ); // Transfer Token to buyer
-                
         // Erase the buy order from buy order table if the order has been took.
         if (itr->ask.amount == 0 || itr->bid.amount == 0) {
             itr = unit_price_index.erase(itr);
@@ -238,23 +276,28 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
     publish_order<sellorders_t>(account, bid, ask); // The current order is not fully matched, publish the order
 }
 
+/**
+ * @brief Cancel an existing buy or sell order 
+ * 
+ * @param account - buyer
+ * @param sym - token symbol
+ * @param id - Order id 
+ **/
 template <typename T>
-void kyubeydex::cancelorder(name &account, string &str_symbol, const uint64_t &id) {
-    require_auth(account);
-
-    symbol sym(str_symbol, 4);
-    T _table(get_self(), sym.code().raw());  
+void kyubeydex::cancelorder( const name &executor, const symbol_code &code, const uint64_t &id) {
+    T _table(get_self(), code.raw());
     auto itr = _table.require_find(id, "Trade id is not found");
-    eosio_assert(name(itr->account) == account || account == "kyubeydex.bp"_n, "Account does not match");
+    eosio_assert(executor == name(itr->account) || executor == "kyubeydex.bp"_n, "Account does not match");
 
     action_transfer_token( name(itr->account), itr->bid, string("trade cancel successed") );
     
     _table.erase(itr);
 }
 
-void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset bid, asset ask)
+void kyubeydex::market_price_trade(name account, asset bid, asset ask)
 {
-     if ( isBuyorder ) // Validate bid & ask symbol            
+    const bool isBuyorder = bid.symbol == EOS_SYMBOL ;
+    if ( isBuyorder ) // Validate bid & ask symbol            
         eosio_assert(ask.symbol != EOS_SYMBOL, "Ask must be non-EOS...");
     else 
         eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");
@@ -304,8 +347,7 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
     auto rec_bid = isBuyorder ? asset(sold_eos, EOS_SYMBOL) : asset(sold_token, bid.symbol);
     auto rec_ask = isBuyorder ? asset(sold_token, ask.symbol) : asset(sold_eos, EOS_SYMBOL);
 
-    match_processing(isBuyorder,
-                     match_record{
+    match_processing(match_record{
                          .id = isBuyorder ? itr_a->id : itr_b->id,
                          .bidder = isBuyorder ? account.value : itr_b->account,
                          .asker = isBuyorder ? itr_a->account : account.value,
@@ -315,7 +357,6 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
                          .timestamp = static_cast<time>(current_time()),
                      });
 
-    
     if (isBuyorder) { // Erase the order from order table if the order has been took.
         if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
             unit_price_index_sell_table.erase(itr_a); 
@@ -324,39 +365,55 @@ void kyubeydex::market_price_trade(const bool &isBuyorder, name account, asset b
             unit_price_index_buy_table.erase(itr_b/*--unit_price_index_buy_table.end()*/);
     }
 
-    if (bid.amount != 0) market_price_trade( isBuyorder, account, bid, ask ); // next run
+    if (bid.amount != 0) market_price_trade(account, bid, ask); // next run
 }
 
-void kyubeydex::setwhitelist(string str_symbol, name issuer) {
+/**
+ * @brief Set the whitelist of currencies
+ * 
+ * @param str_symbol - Currency name
+ * @param issuer - Currency contract address
+ **/
+void kyubeydex::setwhitelist( name issuer, asset token ) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
+    whitelist_index_t _whitelist(get_self(), token.symbol.code().raw());
     _whitelist.set( whitelist{ .contract = issuer.value }, get_self()); 
 }
 
-void kyubeydex::rmwhitelist(string str_symbol) {
+/**
+ * @brief Remove currency from whitelist
+ * 
+ * @param str_symbol - Currency name
+ **/
+void kyubeydex::rmwhitelist( asset token ) {
     require_auth(get_self());
-    whitelist_index_t _whitelist(get_self(), symbol(str_symbol, 4).code().raw());
+    whitelist_index_t _whitelist(get_self(), token.symbol.code().raw());
     _whitelist.remove();
 }
 
+/**
+ * @brief Determining the transfer type by memo
+ * 
+ * @param from - The originator of the transfer
+ * @param to - Transfer address
+ * @param bid - Transfer amount
+ * @param memo - Use of transfer
+ **/
 void kyubeydex::onTransfer( name from, name to, asset bid, string memo ) {
-    // x.xxxx KBY 
-    // x.xxxx EOS 
+    // x.xxxx EOS
+    // x.xxxx KBY
     if (to != get_self()) return;    
     require_auth(from);
     eosio_assert(bid.is_valid(), "invalid token transfer");
     eosio_assert(bid.amount > 0, "must be a positive amount");
 
     auto splited_asset = split(memo, ' ');
-    eosio_assert( splited_asset.size() == 2, "Memo error");
-
-    asset ask( string_to_amount(splited_asset[0]),
-               symbol(splited_asset[1], 4)
-             );
+    eosio_assert(splited_asset.size() == 2, "Memo error");
+    asset ask = string_to_asset(splited_asset[0], splited_asset[1]);
 
     if ( ask.amount == 0 ) {
         // eosio_assert( false, "Testing");
-        market_price_trade(bid.symbol == EOS_SYMBOL, from, bid, ask);
+        market_price_trade(from, bid, ask);
         return ;
     }
     if (bid.symbol == EOS_SYMBOL) {
