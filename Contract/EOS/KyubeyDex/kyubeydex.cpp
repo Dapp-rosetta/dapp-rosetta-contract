@@ -180,13 +180,11 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
     
     sellorders_t sell_table(get_self(), ask.symbol.code().raw()); // Retrive the sell table for current token
     auto unit_price_index = sell_table.get_index<"byprice"_n>(); // Get unit price index
-    
     for (auto itr = unit_price_index.begin(); itr != unit_price_index.end();){ // Visit sell orders table
-        if (itr->unit_price > order_unit_price) 
-            break;
+        if (itr->unit_price > order_unit_price) break;
 
-        uint64_t sold_token = ask.amount <= itr->bid.amount ? ask.amount : itr->bid.amount;
-        uint64_t sold_eos = sold_token * itr->unit_price / PRICE_SCALE;
+        int64_t sold_token = ask.amount <= itr->bid.amount ? ask.amount : itr->bid.amount;
+        int64_t sold_eos = sold_token * itr->unit_price / PRICE_SCALE;
 
         unit_price_index.modify(itr, get_self(), [&](auto& t) { // Modify sell order record
             t.bid.amount -= sold_token;
@@ -200,8 +198,8 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
             .id = itr->id,
             .bidder = account.value,
             .asker = itr->account,
-            .bid = asset(sold_eos, EOS_SYMBOL),
-            .ask = asset(sold_token, ask.symbol),
+            .bid = asset{sold_eos, EOS_SYMBOL},
+            .ask = asset{sold_token, ask.symbol},
             .unit_price = itr->unit_price,
             .timestamp = static_cast<time>(current_time()),
         });
@@ -227,24 +225,19 @@ void kyubeydex::buy(name account, asset bid, asset ask) {
  * 
  **/
 void kyubeydex::sell(name account, asset bid, asset ask) {
-    // Validate bid symbol
-    // Validate ask symbol
-    // Validate unit price is integer
-    eosio_assert(bid.symbol != EOS_SYMBOL, "Bid must be non-EOS");
+    eosio_assert(bid.symbol != EOS_SYMBOL, "Bid must be non-EOS"); // Validate bid symbol & ask symbol
     eosio_assert(ask.symbol == EOS_SYMBOL, "Ask must be EOS..");    
-    eosio_assert(is_valid_unit_price(ask.amount, bid.amount), "Ask mod bid must be 0");
+    eosio_assert(is_valid_unit_price(ask.amount, bid.amount), "Ask mod bid must be 0"); // Validate unit price is integer
 
-    // Retrive the buy table for current token
-    buyorders_t buy_table(get_self(), bid.symbol.code().raw());
+    buyorders_t buy_table(get_self(), bid.symbol.code().raw()); // Retrive the buy table for current token
     auto order_unit_price = ask.amount * PRICE_SCALE / bid.amount; // Calculate unit price
     auto unit_price_index = buy_table.get_index<"byprice"_n>(); // Get unit price index
     
-    // Visit buy orders table    
-    for (auto itr = unit_price_index.begin(); itr != unit_price_index.end(); ) {    
+    for (auto itr = unit_price_index.begin(); itr != unit_price_index.end(); ) {  // Visit buy orders table  
         if (itr->unit_price < order_unit_price) break;
 
-        uint64_t sold_token = bid.amount <= itr->ask.amount ? bid.amount : itr->ask.amount;
-        uint64_t sold_eos = sold_token * itr->unit_price / PRICE_SCALE;
+        int64_t sold_token = bid.amount <= itr->ask.amount ? bid.amount : itr->ask.amount;
+        int64_t sold_eos = sold_token * itr->unit_price / PRICE_SCALE;
 
         // Modify sell order record
         unit_price_index.modify(itr, get_self(), [&](auto& t) {
@@ -259,8 +252,8 @@ void kyubeydex::sell(name account, asset bid, asset ask) {
             .id = itr->id,
             .bidder = itr->account,
             .asker = account.value,
-            .bid = asset(sold_token, bid.symbol),
-            .ask = asset(sold_eos, EOS_SYMBOL),
+            .bid = asset{sold_token, bid.symbol},
+            .ask = asset{sold_eos, EOS_SYMBOL},
             .unit_price = itr->unit_price,
             .timestamp = static_cast<time>(current_time()),
         });
@@ -326,12 +319,12 @@ void kyubeydex::market_price_trade(name account, asset bid, asset ask)
     eosio_assert(order_unit_price != 0, "No 0.");
     uint64_t max_amount_for_sell = bid.amount * PRICE_SCALE / order_unit_price ;
     eosio_assert(max_amount_for_sell != 0, "No 0.");
-    uint64_t sold_token = isBuyorder ? (max_amount_for_sell <= itr_a->bid.amount ? max_amount_for_sell : itr_a->bid.amount) :
+    int64_t sold_token = isBuyorder ? (max_amount_for_sell <= itr_a->bid.amount ? max_amount_for_sell : itr_a->bid.amount) :
                                        (max_amount_for_sell <= itr_b->ask.amount ? max_amount_for_sell : itr_b->ask.amount);    
-    uint64_t sold_eos = sold_token * order_unit_price / PRICE_SCALE;
+    int64_t sold_eos = static_cast<int64_t>(sold_token * order_unit_price / PRICE_SCALE);
     eosio_assert(sold_eos != 0, "No 0.");
-    uint64_t &delta = isBuyorder ? sold_eos : sold_token;
-    uint64_t &rdelta = isBuyorder ? sold_token : sold_eos;
+    int64_t &delta = isBuyorder ? sold_eos : sold_token;
+    int64_t &rdelta = isBuyorder ? sold_token : sold_eos;
     auto lambda = [&](auto &t) {
         t.bid.amount -= rdelta;
         t.ask.amount -= delta;
@@ -344,18 +337,18 @@ void kyubeydex::market_price_trade(name account, asset bid, asset ask)
 
     bid.amount -= delta;
     
-    auto rec_bid = isBuyorder ? asset(sold_eos, EOS_SYMBOL) : asset(sold_token, bid.symbol);
-    auto rec_ask = isBuyorder ? asset(sold_token, ask.symbol) : asset(sold_eos, EOS_SYMBOL);
+    auto rec_bid = isBuyorder ? asset{sold_eos, EOS_SYMBOL} : asset{sold_token, bid.symbol};
+    auto rec_ask = isBuyorder ? asset{sold_token, ask.symbol} : asset{sold_eos, EOS_SYMBOL};
 
     match_processing(match_record{
-                         .id = isBuyorder ? itr_a->id : itr_b->id,
-                         .bidder = isBuyorder ? account.value : itr_b->account,
-                         .asker = isBuyorder ? itr_a->account : account.value,
-                         .bid = rec_bid,
-                         .ask = rec_ask,
-                         .unit_price = order_unit_price,
-                         .timestamp = static_cast<time>(current_time()),
-                     });
+        .id = isBuyorder ? itr_a->id : itr_b->id,
+        .bidder = isBuyorder ? account.value : itr_b->account,
+        .asker = isBuyorder ? itr_a->account : account.value,
+        .bid = rec_bid,
+        .ask = rec_ask,
+        .unit_price = order_unit_price,
+        .timestamp = static_cast<time>(current_time()),
+    });
 
     if (isBuyorder) { // Erase the order from order table if the order has been took.
         if (itr_a->bid.amount == 0 || itr_a->ask.amount == 0)
