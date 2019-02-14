@@ -24,7 +24,7 @@ namespace nft { // Non-Fungible Tokens
          * 3. 實際的transfer實現
          * 參考 https://github.com/EOSIO/eosio.contracts/tree/master/eosio.token
         */
-        template <typename TABLE, typename NFT>
+        template <typename T, typename NFT>
         uint64_t transfer(name receiver, name code, name from, name to, NFT &token, string memo) {
             // 驗證權限
             eosio_assert(from != to, "cannot transfer to self");
@@ -33,7 +33,7 @@ namespace nft { // Non-Fungible Tokens
 
             // 開表
             //auto sym = quantity.symbol.code();
-            TABLE table(receiver, code.value);
+            T table(receiver, code.value);
             //const auto &st = statstable.get(sym.raw());
 
             // 回執
