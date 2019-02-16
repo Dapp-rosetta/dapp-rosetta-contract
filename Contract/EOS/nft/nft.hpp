@@ -35,8 +35,8 @@ namespace nft { // Non-Fungible Tokens
      * http://www.drdobbs.com/cpp/how-non-member-functions-improve-encapsu/184401197
      * 
     */
-    template <typename T, typename Token>
-    void transfer(T table, name from, name to, const Token &token, string memo);
+    template <typename T>
+    void transfer(T table, name from, name to, const uint64_t &id, string memo);
 
     /*
     void create(name from) {
