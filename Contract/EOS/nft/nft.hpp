@@ -17,50 +17,6 @@ namespace nft { // Non-Fungible Tokens
         uint64_t     id;
         name owner ;
         uint64_t primary_key() const { return id; }
-
-
-        /* 1. 第一個問題，所有權記載在哪個合約上？
-         * 2. 在合約中的哪個 table 裡？
-         * 3. 實際的transfer實現
-         * 參考 https://github.com/EOSIO/eosio.contracts/tree/master/eosio.token
-        */
-        template <typename T>
-        void transfer(name receiver, name code, name from, name to, string memo) {
-            // 驗證權限
-            eosio_assert(from != to, "cannot transfer to self");
-            require_auth(from);
-            eosio_assert(is_account(to), "to account does not exist");
-
-            // 開表
-            //auto sym = quantity.symbol.code();
-            T table(receiver, code.value);
-            //const auto &st = statstable.get(sym.raw());
-
-            // 回執
-            require_recipient(from);
-            require_recipient(to);
-
-            // 驗證 token
-            /*
-            eosio_assert(quantity.is_valid(), "invalid quantity");
-            eosio_assert(token.amount > 0, "must transfer positive quantity");
-            eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
-            */
-            eosio_assert(memo.size() <= 256, "memo has more than 256 bytes");
-            
-            // 誰付 ram 錢
-            auto payer = has_auth(to) ? to : from;
-
-            // 表操作
-            /*
-            sub_balance(from, quantity);
-            add_balance(to, quantity, payer);
-            */
-            auto itr = table.require_find( id, "Unable to find NFT" );
-            table.modify(itr, receiver, [&](auto &nft) {
-                nft.owner = to ;
-            });
-        }
     };    
 
     struct st_feature_tradeable {
@@ -68,6 +24,19 @@ namespace nft { // Non-Fungible Tokens
     };
 
     struct st_nft : st_basic_token, st_feature_tradeable {};
+
+    /* 1. 第一個問題，所有權記載在哪個合約上？
+     * 2. 在合約中的哪個 table 裡？
+     * 3. 實際的transfer實現
+     * ref:
+     * https://github.com/EOSIO/eosio.contracts/tree/master/eosio.token
+     * 
+     * https://stackoverflow.com/questions/15572665/c-structs-with-member-functions-vs-classes-with-public-variables
+     * http://www.drdobbs.com/cpp/how-non-member-functions-improve-encapsu/184401197
+     * 
+    */
+    template <typename T, typename Token>
+    void transfer(T table, name from, name to, const Token &token, string memo);
 
     /*
     void create(name from) {
