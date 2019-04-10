@@ -157,45 +157,37 @@ ACTION
 ```
 
 # 四cocosbcx的NHAS-1808
-全球著名手机游戏引擎团队cocos搞的，暂未完全开源，兼容EOS
-https://github.com/Cocos-BCX/NHAS-1808
+全球著名手机游戏引擎团队cocos搞的
+https://github.com/Cocos-BCX/EOS-1808
 
 https://dev.cocosbcx.io/docs/bcx-nhas-1808%E6%A0%87%E5%87%86  《标准说明文档》
 ```
-合约对1808 标准资产的操作
-非同质资产所有权转移
+        ACTION addadmin(name admin);
+        ACTION deladmin(name admin);
 
-非同质资产转移 – 调用者
+        ACTION create(name creator, name owner, std::string explain, std::string worldview);
+        ACTION createother(name creator, name owner, std::string explain, std::string worldview, id_type chainid, id_type targetid);
 
-◼ 函数原型
-void transfer_nht_from_caller(string to, string token_hash_or_id)
-
-◼ 调用说明
-从合约调用者转移非同质资产到账户to
-
-◼ 参数说明
-to：目标账户，token_hash_or_id：指定的非同质资产hash 值或者id 编号
-非同质资产转移 – 所有者
-
-◼ 函数原型
-void transfer_nht_from_owner(string to, string token_hash_or_id)
-
-◼ 调用说明
-从合约所有者转移非同质资产到账户to
-
-◼ 参数说明
-to：目标账户，token_hash_or_id：指定的非同质资产hash 值或者id 编号
-4.1.2. 修改非同质资产数据(特定数据域内)
-
-非同质资产转移 – 所有者
-
-◼ 函数原型
-void nht_describe_change(string nht_hash_or_id, string key, string value)
-
-◼ 调用说明
-修改非同质资产的合约相关描述，修改部分为合约对应的域
-
-◼ 参数说明
-token_hash_or_id：指定的非同质资产hash 值或者id 编号，key：描述项索引，value：索引
-对应的描述信息
+        ACTION addaccauth(name owner, name auth);
+        ACTION delaccauth(name owner);
+        
+        ACTION addnftauth(name owner, name auth, id_type id);
+        ACTION delnftauth(name owner, id_type id);
+        ACTION transfer(name from, name to, id_type id, string memo);
+        ACTION addchain(name owner, string chain);
+        ACTION setchain(name owner, id_type chainid, id_type status);
+        ACTION addcompattr(name owner, id_type id);
+        ACTION delcompattr(name owner, id_type id);
+        ACTION setcompose(name owner, id_type firid, id_type secid);
+        ACTION delcompose(name owner, id_type firid, id_type secid);
+        ACTION addgame(name owner, std::string gamename, std::string introduces);
+        ACTION editgame(name owner, id_type gameid, std::string gamename, std::string introduces);
+        ACTION setgame(name owner, id_type gameid, id_type status);
+        ACTION delgame(name owner, id_type gameid);
+        ACTION addgameattr(name owner, id_type gameid, string key, string value);
+        ACTION editgameattr(name owner, id_type gameid, string key, string value);
+        ACTION delgameattr(name owner, id_type gameid, string key);
+        ACTION addmapping(name owner, id_type fromid, id_type targetid, id_type chainid);
+        ACTION delmapping(name owner, id_type fromid, id_type chainid);
+        ACTION burn(name owner, id_type nftid);
 ```
