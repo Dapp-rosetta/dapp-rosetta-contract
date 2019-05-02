@@ -4,4 +4,4 @@ project(abigen_test_example VERSION 1.0.0)
 find_package(eosio.cdt)
 
 ### generate both the wasm and abi
-add_contract( escrow escrow escrow.cpp )
+add_contract( npotokendemo npotokendemo npotokendemo.cpp )
