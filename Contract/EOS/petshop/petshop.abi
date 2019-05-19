@@ -4,47 +4,41 @@
     "types": [],
     "structs": [
         {
-            "name": "add",
+            "name": "adopt",
             "base": "",
             "fields": [
                 {
-                    "name": "author",
+                    "name": "from",
                     "type": "name"
+                },
+                {
+                    "name": "petId",
+                    "type": "int32"
                 }
             ]
         },
         {
-            "name": "init",
-            "base": "",
-            "fields": []
-        },
-        {
-            "name": "todo",
+            "name": "pet",
             "base": "",
             "fields": [
                 {
-                    "name": "counter",
-                    "type": "uint64"
+                    "name": "owner",
+                    "type": "[16]"
                 }
             ]
         }
     ],
     "actions": [
         {
-            "name": "add",
-            "type": "add",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "init",
-            "type": "init",
+            "name": "adopt",
+            "type": "adopt",
             "ricardian_contract": ""
         }
     ],
     "tables": [
         {
-            "name": "todo",
-            "type": "todo",
+            "name": "pet",
+            "type": "pet",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

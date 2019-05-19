@@ -1,5 +1,5 @@
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/singleton.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/singleton.hpp>
 using namespace eosio;
 
 CONTRACT counter : public contract {
